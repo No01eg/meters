@@ -1,0 +1,14 @@
+manifest:
+  version: "1.0"
+
+  remotes: 
+    - name: bus485
+      url: https://github.com/No01eg/bus485.git
+      path: modules/bus485
+      revision: main
+
+  projects:
+    - name: meter
+      url: 
+      path: modules/meter
+      revision: main

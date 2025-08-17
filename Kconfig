@@ -1,0 +1,37 @@
+menuconfig STRIM_METERS
+    bool "Enable energy meters polling by RS485"
+    default n
+
+if STRIM_METERS
+    module = STRIM_METERS
+    module-str = meters
+    source "subsys/logging/Kconfig.template.log_config"
+
+    config STRIM_METERS_BUS485_ENABLE
+        bool "Enable bus485 meters type"
+        default n
+        depends on STRIM_BUS485
+    
+    config STRIM_METERS_INIT_PRIORITY
+        int "Init priority"
+        default 85
+    
+    config STRIM_METERS_MAIN_STACK_SIZE
+        int "Main thread stack size"
+        default 4096
+    
+    config STRIM_METERS_MAIN_THREAD_PRIORITY
+        int "Main thread priority"
+        default 8
+    
+    config STRIM_METERS_ITEMS_MAX_COUNT
+        int "Meters max count"
+        default 5
+        help
+            Should be equal to channels count plus main meter.
+    
+    config STRIM_METERS_SHELL
+        bool "Enable meters shell"
+        default n
+        depends on SHELL
+endif
