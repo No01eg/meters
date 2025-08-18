@@ -16,7 +16,7 @@ typedef enum {
 typedef enum{
     meters_currentType_DC,
     meters_currentType_AC
-}meters_currentType_t
+}meters_currentType_t;
 
 typedef struct{
     uint64_t energyActive;

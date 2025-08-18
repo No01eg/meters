@@ -1,4 +1,5 @@
 #include "meters_private.h"
+LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
 static K_THREAD_STACK_DEFINE(Meters_BaseStack, CONFIG_STRIM_METERS_MAIN_STACK_SIZE);
 
@@ -26,7 +27,7 @@ int32_t meters_init(meters_get_parameters_t cb, void *user_data){
 
     k_thread_create(&context->baseThread, context->baseStack, context->baseStackSize,
                     meters_baseThread, context, NULL, NULL,
-                    CONFIG_STRIM_MAIN_THREAD_PRIORITYm 0, K_NO_WAIT);
+                    CONFIG_STRIM_METERS_INIT_PRIORITY, 0, K_NO_WAIT);
     
     k_thread_name_set(&context->baseThread, "meters");
     return 0;
