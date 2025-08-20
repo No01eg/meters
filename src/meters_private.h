@@ -2,8 +2,6 @@
 
 #include "meters.h"
 
-#include <zephyr.h>
-#include <logging/log.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
@@ -39,6 +37,7 @@ typedef struct{
     meter_parameters_t parameters[CONFIG_STRIM_METERS_ITEMS_MAX_COUNT];
     uint32_t itemCount;
     struct k_mutex dataAccessMutex;
+    struct k_sem reinitSem;
     struct k_thread baseThread;
     k_thread_stack_t *baseStack;
     size_t baseStackSize;
@@ -46,3 +45,5 @@ typedef struct{
     meters_get_parameters_t getParameters;
     void * user_data;
 }meters_context_t;
+
+extern meters_context_t metersContext;
