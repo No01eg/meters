@@ -45,6 +45,25 @@ int32_t meters_reinit(void){
     k_sem_give(&context->reinitSem);
 }
 
+int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
+    meters_context_t *context = &metersContext;
+
+    if(buffer == NULL)
+        return -EINVAL;
+    
+    if(idx => context->itemCount)
+        return -ERANGE;
+    
+    k_mutex_lock(&context->dataAccessMutex, K_FOREVER);
+
+    memcpy(context->items[idx].values, buffer, sizeof(meters_values_t));
+    context->items[idx].timemark = k_uptime_get();
+    context->items[idx].isValidValues = true;
+
+    k_mutex_unlock(&context->dataAccessMutex);
+    //get mutex
+}
+
 static void meters_baseThread(void *args0, void *args1, void *args2){
     meters_context_t *context = (meters_context_t*)args0;
     (void)args1;
