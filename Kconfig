@@ -30,6 +30,11 @@ if STRIM_METERS
         help
             Should be equal to channels count plus main meter.
     
+    config STRIM_METERS_VALID_DATA_TIMEOUT
+        int "Value of window time for control valid data from meter in seconds"
+        default 5
+        
+    
     config STRIM_METERS_SHELL
         bool "Enable meters shell"
         default n
