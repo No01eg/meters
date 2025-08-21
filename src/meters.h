@@ -60,7 +60,7 @@ typedef struct{
 typedef struct{
     meter_itemInfo_t items[CONFIG_STRIM_METERS_ITEMS_MAX_COUNT];
     uint32_t count;
-}meters_collect_values_t;
+}meters_values_collection_t;
 
 typedef int32_t (*meters_get_parameters_t)(meter_parameters_t *table, 
                                         uint32_t table_size, 
@@ -70,5 +70,5 @@ int32_t meters_init(meters_get_parameters_t cb, void *user_data);
 int32_t meters_reinit(void);
 int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer);
 int32_t meters_get_values(uint32_t idx, meters_values_t *buffer);
-int32_t meters_get_all(meters_collect_values_t *buffer);
+int32_t meters_get_all(meters_values_collection_t *buffer);
 const uint8_t * meters_get_typename(meters_type_t type);
