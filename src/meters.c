@@ -13,6 +13,24 @@ meters_context_t metersContext = {
     .baseStackSize = K_THREAD_STACK_SIZEOF(Meters_BaseStack),
 };
 
+typedef struct {
+    const char* name;
+    meters_type_t valuesType;
+    meters_init_t init;
+    meters_read_t read;
+}meters_typeDescription_t;
+
+static const meters_typeDescription_t meters_typeDescription[meters_type_lastIndex] = {
+    [meters_type_externDC] = {.name = "EXTERNAL.DC",
+                            .valuesType = meters_currentType_DC,
+                            .init = NULL,
+                            .read = NULL},
+    [meters_type_externAC] = {.name = "EXTERNAL.AC",
+                            .valuesType = meters_currentType_AC,
+                            .init = NULL,
+                            .read = NULL},
+};
+
 int32_t meters_init(meters_get_parameters_t cb, void *user_data){
     meters_context_t * context = &metersContext;
     int32_t ret;
@@ -62,7 +80,6 @@ int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
     context->items[idx].isValidValues = true;
 
     k_mutex_unlock(&context->dataAccessMutex);
-    //get mutex
     return 0;
 }
 
@@ -83,7 +100,7 @@ static void meters_baseThread(void *args0, void *args1, void *args2){
             ret = initializeMetersContext(context);
             if(ret < 0)
                 goto exitBaseThread;
-            isInitialize = false;
+            isInitialize = true;
         }
 
         //meters data call

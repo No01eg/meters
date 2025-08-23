@@ -11,10 +11,23 @@ LOG_MODULE_REGISTER(app);
  * See the sample documentation for information on how to fix this.
  */
 
+meter_parameters_t meters_parameters[] = {
+	{.type = meters_type_externDC, .address = 1},
+};
 
+int32_t meters_getParameters(meter_parameters_t *table, uint32_t table_size, void *user_data){
+	(void)user_data;
+	
+	uint32_t count = ARRAY_SIZE(meters_parameters);
+
+	if(count > table_size)
+		return -E2BIG;
+	memcpy(table, meters_parameters, sizeof(meters_parameters));
+	return count;
+}
 
 int main(void){
-	
+	meters_init(meters_getParameters, NULL);
 	while(1){
 		k_msleep(2000);
 	}
