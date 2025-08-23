@@ -43,6 +43,7 @@ int32_t meters_init(meters_get_parameters_t cb, void *user_data){
 int32_t meters_reinit(void){
     meters_context_t *context = &metersContext;
     k_sem_give(&context->reinitSem);
+    return 0;
 }
 
 int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
@@ -51,17 +52,18 @@ int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
     if(buffer == NULL)
         return -EINVAL;
     
-    if(idx => context->itemCount)
+    if(idx >= context->itemCount)
         return -ERANGE;
     
     k_mutex_lock(&context->dataAccessMutex, K_FOREVER);
 
-    memcpy(context->items[idx].values, buffer, sizeof(meters_values_t));
+    memcpy(&context->items[idx].values, buffer, sizeof(meters_values_t));
     context->items[idx].timemark = k_uptime_get();
     context->items[idx].isValidValues = true;
 
     k_mutex_unlock(&context->dataAccessMutex);
     //get mutex
+    return 0;
 }
 
 static void meters_baseThread(void *args0, void *args1, void *args2){
@@ -126,5 +128,5 @@ static int32_t initializeMetersContext(meters_context_t *context){
             return -1; //TODO set error type
         }
     }
-
+    return 0;
 }
