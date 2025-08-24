@@ -97,7 +97,7 @@ int32_t meters_get_values(uint32_t idx, meters_values_t *buffer){
     k_mutex_lock(&context->dataAccessMutex, K_FOREVER);
 
     uint64_t curTimemark = k_uptime_get();
-    if((curTimemark - context->items[idx].timemark) > (STRIM_METERS_VALID_DATA_TIMEOUT * 1000))
+    if((curTimemark - context->items[idx].timemark) > (CONFIG_STRIM_METERS_VALID_DATA_TIMEOUT * 1000))
         context->items[idx].isValidValues = false;
     if(context->items[idx].isValidValues){
         memcpy(buffer, &context->items[idx].values, sizeof(meters_values_t));
@@ -108,6 +108,38 @@ int32_t meters_get_values(uint32_t idx, meters_values_t *buffer){
 
     return ret;
 }
+
+const uint8_t * meters_get_typename(meters_type_t type){
+    if(type < meters_type_lastIndex)
+        return meters_typeDescription[type].name;
+    
+    return "unknown";
+}
+
+int32_t meters_get_all(meters_values_collection_t *buffer){
+    meters_context_t *context = &metersContext;
+
+    if(buffer == NULL)
+        return -EINVAL;
+    buffer->count = 0;
+
+    k_mutex_lock(&context->dataAccessMutex, K_FOREVER);
+
+    for(uint32_t i = 0; i < context->itemCount; i++){
+        if((i < ARRAY_SIZE(context->items)) &&
+            (i < ARRAY_SIZE(context->parameters)) && 
+            (i < ARRAY_SIZE(buffer->items))){
+                buffer->items[i].isValid = context->items[i].isValidValues;
+                memcpy(&buffer->items[i].values, &context->items[i].values, sizeof(meters_values_t));
+                memcpy(&buffer->items[i].parameters, &context->parameters[i], sizeof(meter_parameters_t));
+                buffer->count++;
+        }
+    }
+    k_mutex_unlock(&context->dataAccessMutex);
+
+    return 0;
+}
+
 
 static void meters_baseThread(void *args0, void *args1, void *args2){
     meters_context_t *context = (meters_context_t*)args0;
@@ -121,7 +153,7 @@ static void meters_baseThread(void *args0, void *args1, void *args2){
         ret = k_sem_take(&context->reinitSem, K_MSEC(250));
         if (ret == 0)
             isInitialize = false;
-
+ 
         if(!isInitialize){
             ret = initializeMetersContext(context);
             if(ret < 0)
