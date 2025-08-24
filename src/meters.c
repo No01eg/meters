@@ -83,6 +83,32 @@ int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
     return 0;
 }
 
+int32_t meters_get_values(uint32_t idx, meters_values_t *buffer){
+    meters_context_t *context = &metersContext;
+    
+    if(buffer == NULL)
+        return -EINVAL;
+    
+    if(idx >= context->itemCount)
+        return -ERANGE;
+
+    int32_t ret = -ENXIO;
+
+    k_mutex_lock(&context->dataAccessMutex, K_FOREVER);
+
+    uint64_t curTimemark = k_uptime_get();
+    if((curTimemark - context->items[idx].timemark) > (STRIM_METERS_VALID_DATA_TIMEOUT * 1000))
+        context->items[idx].isValidValues = false;
+    if(context->items[idx].isValidValues){
+        memcpy(buffer, &context->items[idx].values, sizeof(meters_values_t));
+        ret = 0;
+    }
+
+    k_mutext_unlock(&context->dataAccessMutex);
+
+    return ret;
+}
+
 static void meters_baseThread(void *args0, void *args1, void *args2){
     meters_context_t *context = (meters_context_t*)args0;
     (void)args1;
