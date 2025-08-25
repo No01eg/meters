@@ -12,7 +12,8 @@ LOG_MODULE_REGISTER(app);
  */
 
 meter_parameters_t meters_parameters[] = {
-	{.type = meters_type_externDC, .address = 1},
+	{.type = meters_type_externDC, .address = 1, .currentFactor = 1},
+	{.type = meters_type_externAC, .address = 3, .currentFactor = 1},
 };
 
 int32_t meters_getParameters(meter_parameters_t *table, uint32_t table_size, void *user_data){

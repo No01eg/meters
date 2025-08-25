@@ -84,20 +84,20 @@ static void shell_values(const struct shell * shell, meters_values_t *values){
       
   if (values->type == meters_currentType_DC){
     shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, 
-                  "       %5ld |         %6.2f", lroundf(values->DC.voltage), 
+                  "       %5ld |         %6.2lf", lroundf(values->DC.voltage), 
                                                 (double)values->DC.current);
   }
   else{
     uint8_t voltage[16];
-    snprintf(voltage, sizeof(voltage), "%ld/%ld/%ld", lroundf(values->AC.voltage[0]), 
+    snprintf(voltage, sizeof(voltage), "%3d/%3d/%3d", lroundf(values->AC.voltage[0]), 
                                                       lroundf(values->AC.voltage[1]), 
                                                       lroundf(values->AC.voltage[2]));
-    uint8_t current[16];
-    snprintf(current, sizeof(current), "%3.1f/%3.1f/%3.1f", (double)values->AC.current[0],
+    uint8_t current[20];
+    snprintf(current, sizeof(current), "%3.1lf/%3.1lf/%3.1lf", (double)values->AC.current[0],
                                                             (double)values->AC.current[1],
                                                             (double)values->AC.current[2]);
 
-    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " %11s | %14s", voltage, current);
+    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " %11s | %16s", voltage, current);
   }
 }
 
@@ -107,21 +107,69 @@ static int32_t meters_reinit_cmd(const struct shell * shell,
   return 0;
 }
 
-static int32_t meters_test_cmd(const struct shell * shell,
+static int32_t meters_viewi_cmd(const struct shell * shell, 
+                                size_t argc, uint8_t ** argv){
+
+  meters_values_t values;
+
+  
+  int32_t ret = meters_get_values(0, &values);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " current = %.3f\n", values.DC.current);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " energy = %lld\n", values.DC.energy);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " power = %.3f\n", values.DC.power);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " voltage = %.3f\n", values.DC.voltage);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " --------------------\n");
+  ret = meters_get_values(1, &values);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " current[0] = %.3f\n", values.AC.current[0]);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " current[1] = %.3f\n", values.AC.current[1]);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " current[2] = %.3f\n", values.AC.current[2]);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " energyActiv = %lld\n", values.AC.energyActive);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " powerActiv = %.3f\n", values.AC.powerActive);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " voltage[0] = %.3f\n", values.AC.voltage[0]);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " voltage[1] = %.3f\n", values.AC.voltage[1]);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " voltage[2] = %.3f\n", values.AC.voltage[2]);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " voltage[2] = %.3f\n", values.AC.voltage[2]);
+  float fl = 4.532;
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " test float = %.3f\n", fl);
+  shell_print(shell, "");
+}
+
+static int32_t meters_testDC_cmd(const struct shell * shell,
                               size_t argc, uint8_t **argv){
   meters_values_t tmp = {
     .DC.current = 2.000,
-    .DC.energy = 35.000,
+    .DC.energy = 35000,
     .DC.power = 77.605,
-    .DC.voltage = 120.3
+    .DC.voltage = 120.3,
+    .type = meters_currentType_DC
   };
 
   meters_set_values(0, &tmp);
   return 0;
 }
 
+static int32_t meters_testAC_cmd(const struct shell * shell,
+                              size_t argc, uint8_t **argv){
+  meters_values_t tmp = {
+    .AC.current[0] = 24.0,
+    .AC.current[1] = 39.0,
+    .AC.current[2] = 57.0,
+    .AC.energyActive = 30500,
+    .AC.powerActive = 564.605,
+    .AC.voltage[0] = 220.4,
+    .AC.voltage[1] = 223.1,
+    .AC.voltage[2] = 222.2,
+    .type = meters_currentType_AC
+  };
+
+  meters_set_values(1, &tmp);
+  return 0;
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_meters,
-  SHELL_CMD(test, NULL, "test to write data", meters_test_cmd),
+  SHELL_CMD(testDC, NULL, "test to write data", meters_testDC_cmd),
+  SHELL_CMD(testAC, NULL, "test to write data", meters_testAC_cmd),
+  SHELL_CMD(viewi, NULL, "view test", meters_viewi_cmd),
   SHELL_CMD(view, NULL,  "View all data", meters_view_cmd),
   SHELL_CMD(reinit, NULL, "Reinite invoke", meters_reinit_cmd),
   SHELL_SUBCMD_SET_END /* Array terminated */
