@@ -104,7 +104,7 @@ int32_t meters_get_values(uint32_t idx, meters_values_t *buffer){
         ret = 0;
     }
 
-    k_mutext_unlock(&context->dataAccessMutex);
+    k_mutex_unlock(&context->dataAccessMutex);
 
     return ret;
 }
