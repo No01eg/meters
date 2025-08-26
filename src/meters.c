@@ -74,11 +74,11 @@ int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
         return -ERANGE;
     
     k_mutex_lock(&context->dataAccessMutex, K_FOREVER);
-
-    memcpy(&context->items[idx].values, buffer, sizeof(meters_values_t));
-    context->items[idx].timemark = k_uptime_get();
-    context->items[idx].isValidValues = true;
-
+    {
+        memcpy(&context->items[idx].values, buffer, sizeof(meters_values_t));
+        context->items[idx].timemark = k_uptime_get();
+        context->items[idx].isValidValues = true;
+    }
     k_mutex_unlock(&context->dataAccessMutex);
     return 0;
 }
@@ -95,15 +95,15 @@ int32_t meters_get_values(uint32_t idx, meters_values_t *buffer){
     int32_t ret = -ENXIO;
 
     k_mutex_lock(&context->dataAccessMutex, K_FOREVER);
-
-    uint64_t curTimemark = k_uptime_get();
-    if((curTimemark - context->items[idx].timemark) > (CONFIG_STRIM_METERS_VALID_DATA_TIMEOUT * 1000))
-        context->items[idx].isValidValues = false;
-    if(context->items[idx].isValidValues){
-        memcpy(buffer, &context->items[idx].values, sizeof(meters_values_t));
-        ret = 0;
+    {
+        uint64_t curTimemark = k_uptime_get();
+        if((curTimemark - context->items[idx].timemark) > (CONFIG_STRIM_METERS_VALID_DATA_TIMEOUT))
+            context->items[idx].isValidValues = false;
+        if(context->items[idx].isValidValues){
+            memcpy(buffer, &context->items[idx].values, sizeof(meters_values_t));
+            ret = 0;
+        }
     }
-
     k_mutex_unlock(&context->dataAccessMutex);
 
     return ret;
@@ -124,15 +124,16 @@ int32_t meters_get_all(meters_values_collection_t *buffer){
     buffer->count = 0;
 
     k_mutex_lock(&context->dataAccessMutex, K_FOREVER);
-
-    for(uint32_t i = 0; i < context->itemCount; i++){
-        if((i < ARRAY_SIZE(context->items)) &&
-            (i < ARRAY_SIZE(context->parameters)) && 
-            (i < ARRAY_SIZE(buffer->items))){
-                buffer->items[i].isValid = context->items[i].isValidValues;
-                memcpy(&buffer->items[i].values, &context->items[i].values, sizeof(meters_values_t));
-                memcpy(&buffer->items[i].parameters, &context->parameters[i], sizeof(meter_parameters_t));
-                buffer->count++;
+    {
+        for(uint32_t i = 0; i < context->itemCount; i++){
+            if((i < ARRAY_SIZE(context->items)) &&
+                (i < ARRAY_SIZE(context->parameters)) && 
+                (i < ARRAY_SIZE(buffer->items))){
+                    buffer->items[i].isValid = context->items[i].isValidValues;
+                    memcpy(&buffer->items[i].values, &context->items[i].values, sizeof(meters_values_t));
+                    memcpy(&buffer->items[i].parameters, &context->parameters[i], sizeof(meter_parameters_t));
+                    buffer->count++;
+            }
         }
     }
     k_mutex_unlock(&context->dataAccessMutex);
