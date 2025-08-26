@@ -31,8 +31,8 @@ if STRIM_METERS
             Should be equal to channels count plus main meter.
     
     config STRIM_METERS_VALID_DATA_TIMEOUT
-        int "Value of window time for control valid data from meter in seconds"
-        default 5
+        int "Value of window time for control valid data from meter in ms"
+        default 5000
         
     
     config STRIM_METERS_SHELL
