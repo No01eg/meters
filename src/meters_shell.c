@@ -9,37 +9,32 @@ static void shell_values(const struct shell * shell, meters_values_t *values);
 static int32_t meters_view_cmd(const struct shell * shell, 
                                  size_t argc, uint8_t ** argv)
 {
-  meters_context_t *context =&metersContext;
-  meters_values_t values;
-
+  meters_values_collection_t data;
   shell_print(shell, "    |    Type      |   Address  | Energy,kWh | Power,W |  Voltage,V  |    Current,A   | CT");
   shell_print(shell, "----|--------------|------------|------------|---------|-------------|----------------|----");
 
-  for(uint32_t i = 0; i < context->itemCount; i++){
-    meter_parameters_t *param = &context->parameters[i];
-    
-    int32_t ret = meters_get_values(i, &values);
+  int32_t ret = meters_get_all(&data);
+  if(ret < 0){
+    shell_warn(shell, "collect data error: %d\r\n", ret);
+    return 0;
+  }
 
-    if((ret != 0) && (ret != -ENXIO)){
-      shell_warn(shell, "get values of item %d error: %d\r\n", i, ret);
-      return 0;
-    }
-
+  for(uint32_t i = 0; i < data.count; i++){
     uint8_t addr_str[12] = {0};
-    get_meter_address(addr_str, sizeof(addr_str), param);
+    get_meter_address(addr_str, sizeof(addr_str), &data.items[i].parameters);
 
     shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT,
-                  " %2u | %-12s | %-10s |", i, meters_get_typename(param->type), addr_str);
-          
-    if(ret == -ENXIO){
+                  " %2u | %-12s | %-10s |", i, meters_get_typename(data.items[i].parameters.type), addr_str);
+
+    if(!data.items[i].isValid){
       shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "        --- |     --- |         --- |            ---");
     }
     else{
-      shell_values(shell, &values);
+      shell_values(shell, &data.items[i].values);
     }
-    shell_print(shell, " | %2u", param->currentFactor);
+    shell_print(shell, " | %2u", data.items[i].parameters.currentFactor);             
   }
-
+  
   shell_print(shell, "");
 
   return 0;
@@ -89,7 +84,7 @@ static void shell_values(const struct shell * shell, meters_values_t *values){
   }
   else{
     uint8_t voltage[16];
-    snprintf(voltage, sizeof(voltage), "%3d/%3d/%3d", lroundf(values->AC.voltage[0]), 
+    snprintf(voltage, sizeof(voltage), "%3ld/%3ld/%3ld", lroundf(values->AC.voltage[0]), 
                                                       lroundf(values->AC.voltage[1]), 
                                                       lroundf(values->AC.voltage[2]));
     uint8_t current[20];
@@ -97,7 +92,7 @@ static void shell_values(const struct shell * shell, meters_values_t *values){
                                                             (double)values->AC.current[1],
                                                             (double)values->AC.current[2]);
 
-    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " %11s | %16s", voltage, current);
+    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " %11s | %14s", voltage, current);
   }
 }
 
@@ -129,8 +124,7 @@ static int32_t meters_viewi_cmd(const struct shell * shell,
   shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " voltage[1] = %.3f\n", values.AC.voltage[1]);
   shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " voltage[2] = %.3f\n", values.AC.voltage[2]);
   shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " voltage[2] = %.3f\n", values.AC.voltage[2]);
-  float fl = 4.532;
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " test float = %.3f\n", fl);
+  
   shell_print(shell, "");
 }
 

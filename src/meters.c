@@ -12,7 +12,7 @@ meters_context_t metersContext = {
 
 typedef struct {
     const char* name;
-    meters_type_t valuesType;
+    meters_currentType_t valuesType;
     meters_init_t init;
     meters_read_t read;
 }meters_typeDescription_t;
@@ -161,7 +161,11 @@ int32_t meters_get_all(meters_values_collection_t *buffer){
             if((i < ARRAY_SIZE(context->items)) &&
                 (i < ARRAY_SIZE(context->parameters)) && 
                 (i < ARRAY_SIZE(buffer->items))){
-                    buffer->items[i].isValid = context->items[i].isValidValues;
+                    uint32_t timemark = k_uptime_get_32();
+                    if((timemark - context->items[i].timemark) > (CONFIG_STRIM_METERS_VALID_DATA_TIMEOUT))
+                        buffer->items[i].isValid = context->items[i].isValidValues = false;
+                    else
+                        buffer->items[i].isValid = context->items[i].isValidValues;
                     memcpy(&buffer->items[i].values, &context->items[i].values, sizeof(meters_values_t));
                     memcpy(&buffer->items[i].parameters, &context->parameters[i], sizeof(meter_parameters_t));
                     buffer->count++;
