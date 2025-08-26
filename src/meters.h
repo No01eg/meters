@@ -54,7 +54,7 @@ typedef struct{
     meter_parameters_t parameters;
     meters_values_t values;
     int32_t isValid;
-    uint64_t timemark;
+    uint32_t timemark;
 }meter_itemInfo_t;
 
 typedef struct{

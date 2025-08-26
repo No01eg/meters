@@ -26,7 +26,7 @@ typedef struct{
     meters_values_t values;
     meters_data_t data;
     uint32_t isValidValues;
-    uint64_t timemark;  
+    uint32_t timemark;  
 }meters_item_t;
 
 typedef struct{

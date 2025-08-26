@@ -76,7 +76,7 @@ int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
     k_mutex_lock(&context->dataAccessMutex, K_FOREVER);
     {
         memcpy(&context->items[idx].values, buffer, sizeof(meters_values_t));
-        context->items[idx].timemark = k_uptime_get();
+        context->items[idx].timemark = k_uptime_get_32();
         context->items[idx].isValidValues = true;
     }
     k_mutex_unlock(&context->dataAccessMutex);
@@ -96,7 +96,7 @@ int32_t meters_get_values(uint32_t idx, meters_values_t *buffer){
 
     k_mutex_lock(&context->dataAccessMutex, K_FOREVER);
     {
-        uint64_t curTimemark = k_uptime_get();
+        uint32_t curTimemark = k_uptime_get_32();
         if((curTimemark - context->items[idx].timemark) > (CONFIG_STRIM_METERS_VALID_DATA_TIMEOUT))
             context->items[idx].isValidValues = false;
         if(context->items[idx].isValidValues){
