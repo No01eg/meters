@@ -102,6 +102,9 @@ int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
     if(idx >= context->itemCount)
         return -ERANGE;
     
+    if(buffer->type != meters_typeDescription[idx].valuesType)
+        return -EINVAL;
+    
     k_mutex_lock(&context->dataAccessMutex, K_FOREVER);
     {
         memcpy(&context->items[idx].values, buffer, sizeof(meters_values_t));
