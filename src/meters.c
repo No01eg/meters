@@ -166,6 +166,7 @@ int32_t meters_get_all(meters_values_collection_t *buffer){
                         buffer->items[i].isValid = context->items[i].isValidValues = false;
                     else
                         buffer->items[i].isValid = context->items[i].isValidValues;
+                    buffer->items[i].timemark = context->items[i].timemark;
                     memcpy(&buffer->items[i].values, &context->items[i].values, sizeof(meters_values_t));
                     memcpy(&buffer->items[i].parameters, &context->parameters[i], sizeof(meter_parameters_t));
                     buffer->count++;
