@@ -18,7 +18,7 @@ typedef struct{
 typedef union{
     meters_dataExternAC_t exAC;
     meters_dataExternDC_t exDC;
-#ifdef CONFIG_STRIM_BUS485_ENABLE
+#ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
 #endif    
 }meters_data_t;
 
@@ -30,7 +30,7 @@ typedef struct{
 }meters_item_t;
 
 typedef struct{
-#ifdef CONFIG_STRIM_BUS485_ENABLE
+#ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
     const struct device *bus485;
 #endif
     meters_item_t items[CONFIG_STRIM_METERS_ITEMS_MAX_COUNT];

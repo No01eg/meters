@@ -1,0 +1,18 @@
+/ { 
+    chosen {
+        strim,meter-bus485 = &b485;
+    };
+};
+
+&usart2 {
+    current-speed = <115200>;
+    pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3>;
+    pinctrl-names= "default";
+    status="okay";
+    b485: bus485 {
+        compatible = "strim,bus485";
+        pin-gpios = <&gpioa 4 GPIO_ACTIVE_HIGH>;
+        label="bus485";
+        status="okay";
+    };
+};

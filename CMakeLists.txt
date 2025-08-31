@@ -1,6 +1,6 @@
 if(CONFIG_STRIM_METERS)
-    list(APPEND ZEPHYR_EXTRA_MODULES "$ENV{ZEPHYR_BASE}/../bus485")
-    
+    list(APPEND ZEPHYR_EXTRA_MODULES "${CMAKE_SOURCE_DIR}/../Bus485")
+
     zephyr_include_directories(src)
     
     zephyr_library()

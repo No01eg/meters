@@ -1,5 +1,6 @@
 #include "meters_private.h"
 #include <stdbool.h>
+#include "bus485.h"
 
 LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
@@ -199,6 +200,7 @@ int32_t meters_init(meters_get_parameters_t cb, void *user_data){
 
     #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
     //TODO! init meters with bus485
+    context->bus485 = DEVICE_DT_GET(DT_CHOSEN(strim_meter_bus485));
     #endif
 
     (void)ret;

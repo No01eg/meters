@@ -11,7 +11,7 @@ if STRIM_METERS
         bool "Enable bus485 meters type"
         default n
         depends on STRIM_BUS485
-    
+
     config STRIM_METERS_INIT_PRIORITY
         int "Init priority"
         default 85
