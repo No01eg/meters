@@ -49,7 +49,7 @@ static void get_meter_address(uint8_t * addr_str, uint32_t buffSize, meter_param
     case meters_type_externDC:
       snprintf(addr_str, buffSize, "  %3u", param->address);
       break;
-#if STRIM_METERS_BUS485_ENABLE
+#if CONFIG_STRIM_METERS_BUS485_ENABLE
     case meters_type_CE318:
       snprintf(addr_str, buffSize, " %u", param->address);
       break;
@@ -57,7 +57,7 @@ static void get_meter_address(uint8_t * addr_str, uint32_t buffSize, meter_param
       snprintf(addr_str, buffSize, "  %4u", param->address);
       break;
     case meters_type_SPM90:
-      snprintf(addr_str, buffSize, "  %03u", param->address);
+      snprintf(addr_str, buffSize, "  %3u", param->address);
       break;
 #endif
     default: 

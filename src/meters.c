@@ -2,6 +2,8 @@
 #include <stdbool.h>
 #include "bus485.h"
 
+#include "meters_spm90.h"
+
 LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
 static K_THREAD_STACK_DEFINE(Meters_BaseStack, CONFIG_STRIM_METERS_MAIN_STACK_SIZE);
@@ -27,7 +29,37 @@ static const meters_typeDescription_t meters_typeDescription[meters_type_lastInd
                             .valuesType = meters_currentType_AC,
                             .init = NULL,
                             .read = NULL},
+#if CONFIG_STRIM_METERS_BUS485_ENABLE
+    [meters_type_SPM90]   = {.name = "SPM90",
+                            .valuesType = meters_currentType_DC,
+                            .init = i32_Meters_InitSpm90,
+                            .read = i32_Meters_ReadSpm90},
+#endif                
 };
+
+meters_currentType_t x_Meters_GetValuesType(meters_type_t type){
+  if (type < meters_type_lastIndex)
+    return meters_typeDescription[type].valuesType;
+  
+  // для неизвестных пусть будет DC
+  return meters_currentType_DC;
+}
+
+meters_read_t x_Meters_GetReadFunc(meters_type_t type)
+{
+  if (type < meters_type_lastIndex)
+    return meters_typeDescription[type].read;
+  
+  return NULL;
+}
+
+meters_init_t x_Meters_GetInitFunc(meters_type_t type)
+{
+  if (type < meters_type_lastIndex)
+    return meters_typeDescription[type].init;
+  
+  return NULL;
+}
 
 static int32_t initializeMetersContext(meters_context_t *context){
     int32_t ret;
@@ -55,6 +87,18 @@ static int32_t initializeMetersContext(meters_context_t *context){
             context->itemCount = 0;
             return -1; //TODO set error type
         }
+        context->items[i].values.type = x_Meters_GetValuesType(type);
+        context->items[i].isValidValues = false;
+        meters_init_t init_func = x_Meters_GetInitFunc(type);
+        if (init_func != NULL)
+        {
+          ret = init_func(context, i);
+          if (ret != 0)
+          {
+            LOG_ERR("init meter %d error: %d", i, ret);
+            return ret;
+          }
+        }
     }
     return 0;
 }
@@ -78,14 +122,22 @@ static void meters_baseThread(void *args0, void *args1, void *args2){
                 goto exitBaseThread;
             isInitialize = true;
         }
-
         //meters data call
         #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
-        for(uint32_t i = 0; i < context->itemsCount; i++){
+        for(uint32_t i = 0; i < context->itemCount; i++){
             //TODO! set periodic call meters data
-
-            k_sleep_(K_MSEC(1000));
+            meters_read_t read_func = x_Meters_GetReadFunc(context->parameters[i].type);
+            if (read_func != NULL)
+            {
+                ret = read_func(context, i);
+                if (ret != 0)
+                {
+                LOG_ERR("read meter %d error: %d", i, ret);
+                goto exitBaseThread;
+                }
+            }
         }
+        k_sleep(K_MSEC(1000));
         #endif
 
     }

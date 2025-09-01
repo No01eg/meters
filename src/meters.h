@@ -5,7 +5,7 @@
 typedef enum {
     meters_type_externAC,
     meters_type_externDC,
-#ifdef STRIM_METERS_BUS485_ENABLE
+#ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
     meters_type_CE318,
     meters_type_Mercury234,
     meters_type_SPM90,

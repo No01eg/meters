@@ -2,6 +2,7 @@
 
 #include "meters.h"
 
+
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
@@ -27,6 +28,7 @@ typedef struct{
     meters_data_t data;
     uint32_t isValidValues;
     uint32_t timemark;  
+    uint32_t badResponceCount;
 }meters_item_t;
 
 typedef struct{
