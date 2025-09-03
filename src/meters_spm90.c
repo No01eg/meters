@@ -20,7 +20,7 @@ static int32_t i32_Meters_Spm90GetResponce(meters_context_t * context, uint8_t i
     if(ret < 0)
         return ret;
 
-    uint16_t crc = crc16(0xA001, 0xFFFF, resp, expected - sizeof(uint16_t));//u16_calculateCRC(resp, expected - sizeof(uint16_t));
+    uint16_t crc = crc16_reflect(0xA001, 0xFFFF, resp, expected - sizeof(uint16_t));
     uint16_t crc1 = (((uint16_t)resp[ret-1]) << 8) | resp[ret-2];
     if(crc != crc1)
         return -EBADMSG;
@@ -46,7 +46,7 @@ int32_t i32_Meters_Spm90GetValues(meters_context_t * context, uint16_t id,
     int32_t ret;
     uint8_t req[8] = {id, 0x03, 0x00, 0x00, 0x00, 0x06};
     uint16_t registers[6] = {0};
-    uint16_t crc = crc16(0xA001, 0xFFFF, req, 6);//u16_calculateCRC(req, 6);
+    uint16_t crc = crc16_reflect(0xA001, 0xFFFF, req, 6);//u16_calculateCRC(req, 6);
     req[6] = crc & 0xff;
     req[7] = (crc >> 8) & 0xff;
     
