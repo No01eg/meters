@@ -9,26 +9,31 @@
 #include <zephyr/shell/shell.h>
 
 typedef struct{
-    meters_valuesDC_t shadow;
-}meters_dataExternDC_t;
+    meters_values_dc_t shadow;
+}meters_data_extern_dc_t;
 
 typedef struct{
-    meters_valuesAC_t shadow;
-}meters_dataExternAC_t;
+    meters_values_ac_t shadow;
+}meters_data_extern_ac_t;
+
+typedef struct {
+    meters_values_dc_t shadow;
+}meters_data_spm90_t;
 
 typedef union{
-    meters_dataExternAC_t exAC;
-    meters_dataExternDC_t exDC;
+    meters_data_extern_ac_t extern_ac;
+    meters_data_extern_dc_t extern_dc;
 #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
+    meters_data_spm90_t spm90;
 #endif    
 }meters_data_t;
 
 typedef struct{
     meters_values_t values;
     meters_data_t data;
-    uint32_t isValidValues;
+    uint32_t is_valid_values;
     uint32_t timemark;  
-    uint32_t badResponceCount;
+    uint32_t bad_responce_count;
 }meters_item_t;
 
 typedef struct{
@@ -37,18 +42,17 @@ typedef struct{
 #endif
     meters_item_t items[CONFIG_STRIM_METERS_ITEMS_MAX_COUNT];
     meter_parameters_t parameters[CONFIG_STRIM_METERS_ITEMS_MAX_COUNT];
-    uint32_t itemCount;
-    struct k_mutex dataAccessMutex;
+    uint32_t item_count;
+    struct k_mutex data_access_mutex;
     struct k_sem reinitSem;
     struct k_thread baseThread;
     k_thread_stack_t *baseStack;
-    size_t baseStackSize;
+    size_t base_stack_size;
 
-    meters_get_parameters_t getParameters;
-    void * user_data;
+    //void * user_data;
 }meters_context_t;
 
-extern meters_context_t metersContext;
+extern meters_context_t meters_context;
 
 typedef int32_t (*meters_init_t)(meters_context_t *context, uint32_t itemIndex);
 typedef int32_t (*meters_read_t)(meters_context_t *context, uint32_t itemIndex);
