@@ -56,3 +56,5 @@ extern meters_context_t meters_context;
 
 typedef int32_t (*meters_init_t)(meters_context_t *context, uint32_t itemIndex);
 typedef int32_t (*meters_read_t)(meters_context_t *context, uint32_t itemIndex);
+
+meters_read_t meters_get_read_func(meters_type_t type);

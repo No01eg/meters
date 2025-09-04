@@ -3,15 +3,13 @@
 #include "bus485.h"
 
 #include "meters_spm90.h"
+#include "meters_call.h"
 
 LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
-static K_THREAD_STACK_DEFINE(meters_basestack, CONFIG_STRIM_METERS_MAIN_STACK_SIZE);
+//static K_THREAD_STACK_DEFINE(meters_basestack, CONFIG_STRIM_METERS_MAIN_STACK_SIZE);
 
-meters_context_t meters_context = {
-    .baseStack = meters_basestack,
-    .base_stack_size = K_THREAD_STACK_SIZEOF(meters_basestack),
-};
+meters_context_t meters_context;
 
 typedef struct {
     const char* name;
@@ -107,6 +105,7 @@ static int32_t meters_initialize_context(meters_context_t *context,
     return 0;
 }
 
+#if 0
 static void meters_baseThread(void *args0, void *args1, void *args2){
     meters_context_t *context = (meters_context_t*)args0;
     (void)args1;
@@ -149,6 +148,7 @@ static void meters_baseThread(void *args0, void *args1, void *args2){
     exitBaseThread:
     LOG_ERR("thread %s stopped\r\n", log_strdup(k_thread_name_get(k_current_get())));
 }
+#endif
 
 int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
     meters_context_t *context = &meters_context;
@@ -174,6 +174,7 @@ int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
 
 int32_t meters_get_values(uint32_t idx, meters_values_t *buffer){
     meters_context_t *context = &meters_context;
+    meters_item_t *item = &context->items[idx];
     
     if(buffer == NULL)
         return -EINVAL;
@@ -186,10 +187,10 @@ int32_t meters_get_values(uint32_t idx, meters_values_t *buffer){
     k_mutex_lock(&context->data_access_mutex, K_FOREVER);
     {
         uint32_t curTimemark = k_uptime_get_32();
-        if((curTimemark - context->items[idx].timemark) > (CONFIG_STRIM_METERS_VALID_DATA_TIMEOUT))
-            context->items[idx].is_valid_values = false;
-        if(context->items[idx].is_valid_values){
-            memcpy(buffer, &context->items[idx].values, sizeof(meters_values_t));
+        if((curTimemark - item->timemark) > (CONFIG_STRIM_METERS_VALID_DATA_TIMEOUT))
+            item->is_valid_values = false;
+        if(item->is_valid_values){
+            memcpy(buffer, &item->values, sizeof(meters_values_t));
             ret = 0;
         }
     }
@@ -235,13 +236,17 @@ int32_t meters_get_all(meters_values_collection_t *buffer){
     return 0;
 }
 
+//TODO реализовать остановку всех подчиненных потоков, заблокировать чтение мьютексом 
+// при задании новых параметров
 int32_t meters_reinit(void){
+#if 0
     meters_context_t *context = &meters_context;
     k_sem_give(&context->reinitSem);
+#endif
     return 0;
 }
 
-int32_t meters_init(meter_parameters_t *parameters, uint8_t count){//meters_get_parameters_t cb, void *user_data){
+int32_t meters_init(meter_parameters_t *parameters, uint8_t count){
     meters_context_t * context = &meters_context;
     int32_t ret;
     
@@ -251,21 +256,14 @@ int32_t meters_init(meter_parameters_t *parameters, uint8_t count){//meters_get_
     k_mutex_init(&context->data_access_mutex);
     k_sem_init(&context->reinitSem, 0 ,1);
 
-    //context->getParameters = cb;
-    //context->user_data = user_data;
     meters_initialize_context(context, parameters, count);
-
-    #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
-    //TODO! init meters with bus485
-    context->bus485 = DEVICE_DT_GET(DT_CHOSEN(strim_meter_bus485));
-    #endif
-
+    
     (void)ret;
 
-    k_thread_create(&context->baseThread, context->baseStack, context->base_stack_size,
-                    meters_baseThread, context, NULL, NULL,
-                    CONFIG_STRIM_METERS_INIT_PRIORITY, 0, K_NO_WAIT);
-    
-    k_thread_name_set(&context->baseThread, "meters_bus485");
+#ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
+    context->bus485 = DEVICE_DT_GET(DT_CHOSEN(strim_meter_bus485));
+    meters_call_thread_run(context);
+#endif
+
     return 0;
 }
