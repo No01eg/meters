@@ -1,10 +1,10 @@
-#include "meters_call.h"
+#include "meters_poll485.h"
 
 LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
 static K_THREAD_STACK_DEFINE(meters_basestack, CONFIG_STRIM_METERS_MAIN_STACK_SIZE);
 
-static void meters_baseThread(void *args0, void *args1, void *args2){
+static void meters_poll_bus485_Thread(void *args0, void *args1, void *args2){
     meters_context_t *context = (meters_context_t*)args0;
     (void)args1;
     (void)args2;
@@ -13,16 +13,7 @@ static void meters_baseThread(void *args0, void *args1, void *args2){
     //bool isInitialize = false;
 
     while(true){
-        /*ret = k_sem_take(&context->reinitSem, K_MSEC(250));
-        if (ret == 0)
-            isInitialize = false;
- 
-        if(!isInitialize){
-            ret = meters_initialize_context(context);
-            if(ret < 0)
-                goto exitBaseThread;
-            isInitialize = true;
-        }*/
+
         //meters data call
         #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
         for(uint32_t i = 0; i < context->item_count; i++){
@@ -32,8 +23,8 @@ static void meters_baseThread(void *args0, void *args1, void *args2){
                 ret = read_func(context, i);
                 if (ret != 0)
                 {
-                LOG_ERR("read meter %d error: %d", i, ret);
-                goto exitBaseThread;
+                    LOG_ERR("read meter %d error: %d", i, ret);
+                    goto exit_poll485_thread;
                 }
             }
         }
@@ -42,18 +33,18 @@ static void meters_baseThread(void *args0, void *args1, void *args2){
 
     }
 
-    exitBaseThread:
+    exit_poll485_thread:
     LOG_ERR("thread %s stopped\r\n", log_strdup(k_thread_name_get(k_current_get())));
 }
 
-void meters_call_thread_run(meters_context_t *context){
+void meters_poll485_thread_run(meters_context_t *context){
 
-    context->baseStack = meters_basestack;
-    context->base_stack_size = K_THREAD_STACK_SIZEOF(meters_basestack);
+    context->poll485_stack = meters_basestack;
+    context->poll485_stack_size = K_THREAD_STACK_SIZEOF(meters_basestack);
 
-    k_thread_create(&context->baseThread, context->baseStack, context->base_stack_size,
-                    meters_baseThread, context, NULL, NULL,
+    k_thread_create(&context->poll485_thread, context->poll485_stack, context->poll485_stack_size,
+                    meters_poll_bus485_Thread, context, NULL, NULL,
                     CONFIG_STRIM_METERS_INIT_PRIORITY, 0, K_NO_WAIT);
     
-    k_thread_name_set(&context->baseThread, "meters_bus485");
+    k_thread_name_set(&context->poll485_thread, "meters_bus485");
 }

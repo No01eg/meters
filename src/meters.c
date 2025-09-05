@@ -3,7 +3,7 @@
 #include "bus485.h"
 
 #include "meters_spm90.h"
-#include "meters_call.h"
+#include "meters_poll485.h"
 
 LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
@@ -262,7 +262,7 @@ int32_t meters_init(meter_parameters_t *parameters, uint8_t count){
 
 #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
     context->bus485 = DEVICE_DT_GET(DT_CHOSEN(strim_meter_bus485));
-    meters_call_thread_run(context);
+    meters_poll485_thread_run(context);
 #endif
 
     return 0;

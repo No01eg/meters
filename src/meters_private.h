@@ -45,9 +45,9 @@ typedef struct{
     uint32_t item_count;
     struct k_mutex data_access_mutex;
     struct k_sem reinitSem;
-    struct k_thread baseThread;
-    k_thread_stack_t *baseStack;
-    size_t base_stack_size;
+    struct k_thread poll485_thread;
+    k_thread_stack_t *poll485_stack;
+    size_t poll485_stack_size;
 
     //void * user_data;
 }meters_context_t;
