@@ -1,4 +1,5 @@
 #include "meters_private.h"
+#include "meters_spm90.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +7,43 @@
 
 static void get_meter_address(uint8_t * addr_str, uint32_t buffSize, meter_parameters_t *param);
 static void shell_values(const struct shell * shell, meters_values_t *values, bool horizontal);
+
+#if CONFIG_STRIM_METERS_BUS485_ENABLE
+
+  static int32_t spm90_read_cmd(const struct shell * shell, size_t argc, uint8_t ** argv)
+  {
+    meters_context_t * context = &meters_context;
+    meters_values_dc_t value;
+
+    uint16_t id = (uint16_t)atoi(argv[1]);
+
+    uint32_t baudrate = 9600;
+    if(argc > 2){
+      baudrate = (uint32_t)atoi(argv[2]);
+    }
+    shell_print(shell, "set baudrate to  %u", baudrate);
+
+    int32_t ret = meters_spm90_get_values(context, id, baudrate, &value);
+    if(ret == -ETIMEDOUT){
+      shell_warn(shell, "meter %u no response", id);
+      return 0;
+    }
+    else if(ret != 0){
+      shell_error(shell, "meter %u error: %d", id, ret);
+      return 0;
+    }
+
+    shell_print(shell, "Voltage:  %8.1f V", (double)value.voltage);
+    shell_print(shell, "Current:  %8.2f A", (double)value.current);
+    shell_print(shell, "Power:    %8.0f W", (double)value.power);
+    uint64_t energy_Wh = value.energy / 3600;
+    uint32_t energy_kWh_int = energy_Wh / 1000;
+    uint32_t energy_kWh_fract = energy_Wh % 1000;
+    shell_print(shell, "Energy:   %6u.%03u kWh", energy_kWh_int, energy_kWh_fract);
+
+    return 0;
+  }
+#endif //CONFIG_STRIM_METERS_BUS485_ENABLE
 
 static int32_t meters_view_cmd(const struct shell * shell, 
                                  size_t argc, uint8_t ** argv)
@@ -121,32 +159,6 @@ static int32_t meters_reinit_cmd(const struct shell * shell,
   return 0;
 }
 
-static int32_t meters_viewi_cmd(const struct shell * shell, 
-                                size_t argc, uint8_t ** argv){
-
-  meters_values_t values;
-
-  
-  int32_t ret = meters_get_values(0, &values);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " current = %.3lf\n", (double)values.DC.current);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " energy = %lld\n", values.DC.energy);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " power = %.3lf\n", (double)values.DC.power);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " voltage = %.3lf\n", (double)values.DC.voltage);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " --------------------\n");
-  ret = meters_get_values(1, &values);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " current[0] = %.3lf\n", (double)values.AC.current[0]);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " current[1] = %.3lf\n", (double)values.AC.current[1]);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " current[2] = %.3lf\n", (double)values.AC.current[2]);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " energyActiv = %lld\n", values.AC.energy_active);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " powerActiv = %.3lf\n", (double)values.AC.power_active);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " voltage[0] = %.3lf\n", (double)values.AC.voltage[0]);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " voltage[1] = %.3lf\n", (double)values.AC.voltage[1]);
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " voltage[2] = %.3lf\n", (double)values.AC.voltage[2]);
-  
-  shell_print(shell, "");
-  return 0;
-}
-
 static int32_t meters_view_single_cmd(const struct shell * shell,
                               size_t argc, uint8_t **argv){
   if(argc != 2){
@@ -210,7 +222,8 @@ static int32_t meters_testDC_cmd(const struct shell * shell,
 }
 
 static int32_t meters_testAC_cmd(const struct shell * shell,
-                              size_t argc, uint8_t **argv){
+                              size_t argc, uint8_t **argv)
+{
   meters_values_t tmp = {
     .AC.current[0] = 24.0,
     .AC.current[1] = 39.0,
@@ -220,7 +233,7 @@ static int32_t meters_testAC_cmd(const struct shell * shell,
     .AC.voltage[0] = 220.4,
     .AC.voltage[1] = 223.1,
     .AC.voltage[2] = 222.2,
-    .type = meters_current_type_AC
+    .type = meters_current_type_AC,
   };
 
   meters_set_values(1, &tmp);
@@ -228,10 +241,12 @@ static int32_t meters_testAC_cmd(const struct shell * shell,
 }
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_meters,
+  #if CONFIG_STRIM_METERS_BUS485_ENABLE
+    SHELL_CMD_ARG(spm90, NULL, "spm90 read", spm90_read_cmd, 2, 1),
+  #endif
   SHELL_CMD(testDC, NULL, "test to write data", meters_testDC_cmd),
   SHELL_CMD(testAC, NULL, "test to write data", meters_testAC_cmd),
-  SHELL_CMD(get, NULL, "view data for single meter by index", meters_view_single_cmd),
-  SHELL_CMD(viewi, NULL, "view test", meters_viewi_cmd),
+  SHELL_CMD_ARG(get, NULL, "view data for single meter by index", meters_view_single_cmd, 2, 1),
   SHELL_CMD(view, NULL,  "View all data", meters_view_cmd),
   SHELL_CMD(reinit, NULL, "Reinite invoke", meters_reinit_cmd),
   SHELL_SUBCMD_SET_END /* Array terminated */
