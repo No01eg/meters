@@ -1,4 +1,4 @@
-#include "meters_private.h"
+#include "meters_spm90.h"
 #include "bus485.h"
 #include <zephyr/sys/crc.h>
 

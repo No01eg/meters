@@ -9,6 +9,6 @@ manifest:
 
   projects:
     - name: meter
-      url: 
+      url: https://github.com/No01eg/meters.git
       path: modules/meter
       revision: main
