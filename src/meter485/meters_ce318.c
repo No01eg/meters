@@ -51,11 +51,10 @@ static int32_t ce318_remove_escape(const uint8_t *src, uint8_t * dest, int32_t c
     return size;
 }
 
-static uint16_t ce318_get_crc16(const uint8_t * buffer, uint32_t lenght)
+static uint16_t ce318_get_crc16(uint16_t crc, const uint8_t * buffer, uint32_t lenght)
 {
     static const uint16_t poly = 0x8005;
     uint32_t i;
-    uint16_t crc = 0;
     const uint8_t * pcBlock = buffer;
     
     while(lenght--){
