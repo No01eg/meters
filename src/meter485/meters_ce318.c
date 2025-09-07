@@ -38,10 +38,12 @@ static int32_t ce318_remove_escape(const uint8_t *src, uint8_t * dest, int32_t c
             src += 2;
             size++;
             dest++;
+            count -= 2;
         }
         else{
             *dest++ = *src++;
             size++;
+            count--;
         }
     }
     return size;
