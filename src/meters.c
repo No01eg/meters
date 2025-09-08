@@ -3,6 +3,7 @@
 #include "bus485.h"
 
 #include "meters_spm90.h"
+#include "meters_ce318.h"
 #include "meters_poll485.h"
 
 LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
@@ -32,6 +33,10 @@ static const meters_description_type_t meters_description_type[meters_type_lastI
                             .values_type = meters_current_type_DC,
                             .init = meters_spm90_init,
                             .read = meters_spm90_read},
+    [meters_type_CE318]   = {.name = "CE318",
+                            .values_type = meters_current_type_AC,
+                            .init = meters_ce318_init,
+                            .read = meters_ce318_read},
 #endif                
 };
 

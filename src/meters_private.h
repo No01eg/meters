@@ -20,11 +20,16 @@ typedef struct {
     meters_values_dc_t shadow;
 }meters_data_spm90_t;
 
+typedef struct {
+    meters_values_ac_t shadow;
+}meters_data_ce318_t;
+
 typedef union{
     meters_data_extern_ac_t extern_ac;
     meters_data_extern_dc_t extern_dc;
 #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
     meters_data_spm90_t spm90;
+    meters_data_ce318_t ce318;
 #endif    
 }meters_data_t;
 

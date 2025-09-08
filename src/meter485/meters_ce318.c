@@ -1,4 +1,5 @@
 #include "meters_ce318.h"
+#include "bus485.h"
 
 LOG_MODULE_DECLARE(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
@@ -11,6 +12,70 @@ enum{CE318_ERROR_THRESHOLD = 3};
 
 #define SMP_COMMAND_DATA (6)
 #define SMP_COMMAND_ERROR (7)
+
+typedef enum
+{
+  SMP_Command_GetDataSingle     =  1,
+  SMP_Command_GetDataMultiple   =  2,
+  SMP_Command_GetDataSingleEx   = 10,
+  SMP_Command_GetDataMultipleEx = 11,
+
+} SMP_Command_t;
+
+typedef enum
+{
+  SMP_DataSingle_EnergyRegisteredActivePlus     =   1,
+  SMP_DataSingle_EnergyRegisteredActiveMinus    =   2,
+  SMP_DataSingle_EnergyRegisteredReactivePlus   =   3,
+  SMP_DataSingle_EnergyRegisteredReactiveMinus  =   4,
+
+  SMP_DataSingle_TotalPower                     =  13,
+  SMP_DataSingle_PowerActivePlus                =  14,
+  SMP_DataSingle_PowerActiveMinus               =  15,
+  SMP_DataSingle_PowerReactivePlus              =  16,
+  SMP_DataSingle_PowerReactiveMinus             =  17,
+
+  SMP_DataSingle_PowerFactor                    =  25,
+  SMP_DataSingle_Frequency                      =  26,
+
+  SMP_DataSingle_Temperature                    =  31,
+  SMP_DataSingle_Battery                        =  32,
+
+  SMP_DataSingle_Time                           =  49,
+
+  SMP_DataSingle_TotalPower_mVA                 = 105,
+  SMP_DataSingle_TotalPower_mW                  = 106,
+  SMP_DataSingle_TotalPower_mvar                = 107,
+  
+
+} SMP_DataSingle_t;
+
+typedef enum
+{
+  SMP_DataSingleEx_Power          =  13,
+  SMP_DataSingleEx_PowerActive    =  14,
+  SMP_DataSingleEx_PowerReactive  =  16,
+  SMP_DataSingleEx_Current        =  22,
+  SMP_DataSingleEx_Voltage        =  24,
+  SMP_DataSingleEx_PowerFactor    =  25,
+  SMP_DataSingleEx_Frequency      =  26,
+
+} SMP_DataSingleEx_t;
+
+
+#define BIT(_n_)  (1 << _n_)
+
+typedef enum
+{
+  SMP_DataSingleExFlags_O = BIT(1),
+  SMP_DataSingleExFlags_A = BIT(2),
+  SMP_DataSingleExFlags_B = BIT(3),
+  SMP_DataSingleExFlags_C = BIT(4),
+
+} SMP_DataSingleExFlags_t;
+
+
+#define SMP_NO_DFF        (0x00)
  
 static int32_t ce318_set_escape(const uint8_t * src, uint8_t * dest, int32_t count)
 {
@@ -148,17 +213,133 @@ int32_t meters_ce318_send_packet(meters_context_t * context,
     if(ret < 0){
         bus485_release(context->bus485);
     }
-    return ret;
+    return 0;
 }
 
-int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * data)
-{
+int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * data, uint32_t length)
+{   
+    int32_t ret;
+    uint8_t resp[256];
+    uint8_t size = 0;   
+                                           
+    ret = bus485_recv(context->bus485, resp, ARRAY_SIZE(resp), 3000);
+    if(ret < 0){
+        LOG_WRN("get ce318 response error: %d", ret);
+        return ret;
+    }
 
+    size += ret;
+    LOG_HEXDUMP_WRN(resp, size, "Rcv buff");
+
+    if(resp[ret-1] != SMP_END){
+        
+        ret = bus485_recv(context->bus485, resp + ret, ARRAY_SIZE(resp) - ret, 1000);
+        if(ret < 0){
+            LOG_WRN("get ce318 second response error: %d", ret);
+            return ret;
+        }
+        else 
+            size += ret;
+    }
+
+    LOG_HEXDUMP_WRN(resp, size, "Rcv buff");
+
+    if(size > length){
+        LOG_WRN("get ce318 check length error: %d", ret);
+        return -EMSGSIZE;
+    }
+
+    if(resp[size - 1] != SMP_END || resp[0] != SMP_END){
+        LOG_WRN("get ce318 0xC0 error: %d", ret);
+        return -EBADMSG;
+    }
+    
+    uint8_t pack[256] = {0};
+    
+    size = ce318_remove_escape(&resp[1], pack, size - 2);
+    
+    uint16_t crc_test = (pack[size-2] << 8) | pack[size-1];
+
+    uint16_t crc = 0;
+    crc = ce318_get_crc16(crc, pack, size - 2);
+    
+    if(crc != crc_test){
+        LOG_WRN("get ce318 crc error: %d", ret);
+        return -EBADMSG;
+    }
+    LOG_WRN("ce318 pack receive success\r\n");
+    memcpy(data, pack + 7, size - 9);
+
+    return size - 9;
+}
+
+int32_t meters_ce318_get_voltage(meters_context_t *context, uint32_t baudrate, 
+                                uint32_t address, float voltage[3])
+{
+  uint8_t query[] = {SMP_Command_GetDataSingleEx, SMP_NO_DFF, SMP_DataSingleEx_Voltage, 
+                     SMP_DataSingleExFlags_A | SMP_DataSingleExFlags_B | SMP_DataSingleExFlags_C};
+
+
+  int64_t value[3];
+
+  int32_t ret = meters_ce318_send_packet(context, 4800, address, query, sizeof(query));
+
+  if (ret != 0)
+    return ret;
+
+    uint8_t response[256];
+  ret = meters_ce318_get_response(context, response, sizeof(response));
+  if(ret < 0){
+        bus485_release(context->bus485);
+      return ret;
+  }
+  bus485_release(context->bus485);
+
+  int32_t offset = ce318_dff_parce(response + 3, ret, &value[0], 1);
+  offset += ce318_dff_parce(response+offset + 3, ret-offset, &value[1], 1);
+  offset += ce318_dff_parce(response+offset + 3, ret-offset, &value[2], 1);
+
+  if (voltage != NULL)
+  {
+    for (uint32_t i = 0; i < 3; i++)
+    {
+      voltage[i] = value[i] / 100.0;
+    }
+  }
+
+  return 0;
 }
 
 int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
 {
+    int32_t ret;
+    meters_item_t * item = &context->items[item_idx];
+    meter_parameters_t *param = &context->parameters[item_idx];
+    meters_values_ac_t * shadow = &item->data.ce318.shadow;
 
+    ret = meters_ce318_get_voltage(context, param->baudrate, 
+                                param->address, shadow->voltage);
+                                
+    if(ret == 0){
+        item->bad_responce_count = 0;
+        k_mutex_lock(&context->data_access_mutex, K_FOREVER);
+        {
+            item->is_valid_values = true;
+            item->timemark = k_uptime_get_32();
+            memcpy(&item->values.AC, shadow, sizeof(meters_values_ac_t));
+        }
+        k_mutex_unlock(&context->data_access_mutex);
+    }
+    else {
+        if(item->is_valid_values && (++item->bad_responce_count > CE318_ERROR_THRESHOLD)){
+            k_mutex_lock(&context->data_access_mutex, K_FOREVER);
+            {
+                item->is_valid_values = false;
+            }
+            k_mutex_unlock(&context->data_access_mutex);
+        }
+    }
+    return 0;
 }
 
 
@@ -170,4 +351,5 @@ int32_t meters_ce318_init(meters_context_t * context, uint32_t item_idx)
     meters_item_t * item = &context->items[item_idx];
 
     item->bad_responce_count = CE318_ERROR_THRESHOLD;
+    return 0;
 }

@@ -7,6 +7,7 @@ if(CONFIG_STRIM_METERS)
 
     zephyr_library_sources_ifdef(CONFIG_STRIM_METERS src/meters.c)
     zephyr_library_sources_ifdef(CONFIG_STRIM_METERS_BUS485_ENABLE src/meter485/meters_spm90.c)
+    zephyr_library_sources_ifdef(CONFIG_STRIM_METERS_BUS485_ENABLE src/meter485/meters_ce318.c)
     zephyr_library_sources_ifdef(CONFIG_STRIM_METERS_BUS485_ENABLE src/meter485/meters_poll485.c)
     zephyr_library_sources_ifdef(CONFIG_STRIM_METERS_SHELL src/meters_shell.c)
 endif()
