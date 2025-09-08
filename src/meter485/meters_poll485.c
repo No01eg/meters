@@ -1,6 +1,6 @@
 #include "meters_poll485.h"
 
-LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
+LOG_MODULE_DECLARE(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
 static K_THREAD_STACK_DEFINE(meters_basestack, CONFIG_STRIM_METERS_MAIN_STACK_SIZE);
 
@@ -34,7 +34,7 @@ static void meters_poll_bus485_Thread(void *args0, void *args1, void *args2){
     }
 
     exit_poll485_thread:
-    LOG_ERR("thread %s stopped\r\n", log_strdup(k_thread_name_get(k_current_get())));
+    //LOG_ERR("thread %s stopped\r\n", log_strdup(k_thread_name_get(k_current_get())));
 }
 
 void meters_poll485_thread_run(meters_context_t *context){
