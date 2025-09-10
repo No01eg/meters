@@ -1,0 +1,33 @@
+/ { 
+    chosen {
+        strim,meter-bus485 = &b485;
+    };
+};
+
+&usart1 {
+	pinctrl-0 = <&usart1_tx_pb14 &usart1_rx_pb15>;
+	pinctrl-names = "default";
+	current-speed = <115200>;
+	status = "okay";
+    b485_1: bus485 {
+        compatible = "strim,bus485";
+        pin-gpios = <&gpiob 13 GPIO_ACTIVE_HIGH>;
+        label="bus485";
+        status="disabled";
+    };
+};
+
+&usart2 {
+    current-speed = <115200>;
+    pinctrl-0 = <&usart2_tx_pd5 &usart2_rx_pd6>;
+    pinctrl-names= "default";
+    status="okay";
+    b485: bus485 {
+        compatible = "strim,bus485";
+        pin-gpios = <&gpiod 4 GPIO_ACTIVE_HIGH>;
+        label="bus485";
+        status="okay";
+    };
+};
+
+
