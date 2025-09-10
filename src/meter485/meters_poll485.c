@@ -10,12 +10,10 @@ static void meters_poll_bus485_Thread(void *args0, void *args1, void *args2){
     (void)args2;
 
     int32_t ret = 0;
-    //bool isInitialize = false;
 
     while(true){
 
         //meters data call
-        #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
         for(uint32_t i = 0; i < context->item_count; i++){
             //TODO! set periodic call meters data
             meters_read_t read_func = meters_get_read_func(context->parameters[i].type);
@@ -29,8 +27,6 @@ static void meters_poll_bus485_Thread(void *args0, void *args1, void *args2){
             }
         }
         k_sleep(K_MSEC(1000));
-        #endif
-
     }
 
     exit_poll485_thread:
