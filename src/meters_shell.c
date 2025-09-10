@@ -81,10 +81,10 @@ static int32_t meters_view_cmd(const struct shell * shell,
 
 static void get_meter_address(uint8_t * addr_str, uint32_t buffSize, meter_parameters_t *param){
   switch(param->type){
-    case meters_type_externAC:
+    case meters_type_extern_ac:
       snprintf(addr_str, buffSize, "  %3u", param->address);
       break;
-    case meters_type_externDC:
+    case meters_type_extern_dc:
       snprintf(addr_str, buffSize, "  %3u", param->address);
       break;
 #if CONFIG_STRIM_METERS_BUS485_ENABLE
@@ -104,13 +104,13 @@ static void get_meter_address(uint8_t * addr_str, uint32_t buffSize, meter_param
 }
 
 static void shell_values(const struct shell * shell, meters_values_t *values, bool horizontal){
-  uint64_t energy_Ws = (values->type ==     meters_current_type_DC) 
+  uint64_t energy_Ws = (values->type ==     meters_current_type_dc) 
                               ? values->DC.energy : values->AC.energy_active;
   uint64_t energy_Wh = energy_Ws / 3600;
   uint32_t energy_kWh_fractional = energy_Wh % 1000;
   uint32_t energy_kWh_integer = energy_Wh / 1000;
 
-  uint32_t power = (values->type == meters_current_type_DC) 
+  uint32_t power = (values->type == meters_current_type_dc) 
                       ? lroundf(values->DC.power) : lroundf(values->AC.power_active);
   if(horizontal){
     shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " %6u.%03u |  %6u |",  
@@ -121,7 +121,7 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
     shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "Power       : %u W\r\n", power);
   }
       
-  if (values->type == meters_current_type_DC){
+  if (values->type == meters_current_type_dc){
     if(horizontal){
       shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, 
                   "       %5ld |         %6.2lf", lroundf(values->DC.voltage), 
@@ -214,7 +214,7 @@ static int32_t meters_testDC_cmd(const struct shell * shell,
     .DC.energy = 35000,
     .DC.power = 77.605,
     .DC.voltage = 120.3,
-    .type = meters_current_type_DC
+    .type = meters_current_type_dc
   };
 
   meters_set_values(0, &tmp);
@@ -233,7 +233,7 @@ static int32_t meters_testAC_cmd(const struct shell * shell,
     .AC.voltage[0] = 220.4,
     .AC.voltage[1] = 223.1,
     .AC.voltage[2] = 222.2,
-    .type = meters_current_type_AC,
+    .type = meters_current_type_ac,
   };
 
   meters_set_values(1, &tmp);

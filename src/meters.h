@@ -3,8 +3,8 @@
 #include <stdint.h>
 
 typedef enum {
-    meters_type_externAC,
-    meters_type_externDC,
+    meters_type_extern_ac,
+    meters_type_extern_dc,
 #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
     meters_type_CE318,
     meters_type_Mercury234,
@@ -14,8 +14,8 @@ typedef enum {
 }meters_type_t;
 
 typedef enum{
-    meters_current_type_DC,
-    meters_current_type_AC
+    meters_current_type_dc,
+    meters_current_type_ac
 }meters_current_type_t;
 
 typedef struct{

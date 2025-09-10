@@ -8,7 +8,6 @@
 
 LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
-//static K_THREAD_STACK_DEFINE(meters_basestack, CONFIG_STRIM_METERS_MAIN_STACK_SIZE);
 
 meters_context_t meters_context;
 
@@ -20,21 +19,21 @@ typedef struct {
 }meters_description_type_t;
 
 static const meters_description_type_t meters_description_type[meters_type_lastIndex] = {
-    [meters_type_externDC] = {.name = "EXTERNAL.DC",
-                            .values_type = meters_current_type_DC,
+    [meters_type_extern_dc] = {.name = "EXTERNAL.DC",
+                            .values_type = meters_current_type_dc,
                             .init = NULL,
                             .read = NULL},
-    [meters_type_externAC] = {.name = "EXTERNAL.AC",
-                            .values_type = meters_current_type_AC,
+    [meters_type_extern_ac] = {.name = "EXTERNAL.AC",
+                            .values_type = meters_current_type_ac,
                             .init = NULL,
                             .read = NULL},
 #if CONFIG_STRIM_METERS_BUS485_ENABLE
     [meters_type_SPM90]   = {.name = "SPM90",
-                            .values_type = meters_current_type_DC,
+                            .values_type = meters_current_type_dc,
                             .init = meters_spm90_init,
                             .read = meters_spm90_read},
     [meters_type_CE318]   = {.name = "CE318",
-                            .values_type = meters_current_type_AC,
+                            .values_type = meters_current_type_ac,
                             .init = meters_ce318_init,
                             .read = meters_ce318_read},
 #endif                
@@ -45,7 +44,7 @@ meters_current_type_t meters_get_values_type(meters_type_t type){
     return meters_description_type[type].values_type;
   
   // для неизвестных пусть будет DC
-  return meters_current_type_DC;
+  return meters_current_type_dc;
 }
 
 meters_read_t meters_get_read_func(meters_type_t type)
@@ -110,50 +109,6 @@ static int32_t meters_initialize_context(meters_context_t *context,
     return 0;
 }
 
-#if 0
-static void meters_baseThread(void *args0, void *args1, void *args2){
-    meters_context_t *context = (meters_context_t*)args0;
-    (void)args1;
-    (void)args2;
-
-    int32_t ret = 0;
-    //bool isInitialize = false;
-
-    while(true){
-        /*ret = k_sem_take(&context->reinitSem, K_MSEC(250));
-        if (ret == 0)
-            isInitialize = false;
- 
-        if(!isInitialize){
-            ret = meters_initialize_context(context);
-            if(ret < 0)
-                goto exitBaseThread;
-            isInitialize = true;
-        }*/
-        //meters data call
-        #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
-        for(uint32_t i = 0; i < context->item_count; i++){
-            //TODO! set periodic call meters data
-            meters_read_t read_func = meters_get_read_func(context->parameters[i].type);
-            if (read_func != NULL)
-            {
-                ret = read_func(context, i);
-                if (ret != 0)
-                {
-                LOG_ERR("read meter %d error: %d", i, ret);
-                goto exitBaseThread;
-                }
-            }
-        }
-        k_sleep(K_MSEC(1000));
-        #endif
-
-    }
-
-    exitBaseThread:
-    LOG_ERR("thread %s stopped\r\n", log_strdup(k_thread_name_get(k_current_get())));
-}
-#endif
 
 int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
     meters_context_t *context = &meters_context;
