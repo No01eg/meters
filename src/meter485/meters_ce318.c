@@ -322,13 +322,8 @@ int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
                                 
     if(ret == 0){
         item->bad_responce_count = 0;
-        k_mutex_lock(&context->data_access_mutex, K_FOREVER);
-        {
-            item->is_valid_values = true;
-            item->timemark = k_uptime_get_32();
-            memcpy(&item->values.AC, shadow, sizeof(meters_values_ac_t));
-        }
-        k_mutex_unlock(&context->data_access_mutex);
+        meters_values_t data = {.AC = *shadow, .type = meters_current_type_ac};
+        meters_set_values(item_idx, &data);
     }
     else {
         if(item->is_valid_values && (++item->bad_responce_count > CE318_ERROR_THRESHOLD)){
