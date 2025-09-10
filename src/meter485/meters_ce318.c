@@ -222,7 +222,7 @@ int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * data, ui
     uint8_t resp[256];
     uint8_t size = 0;   
                                            
-    ret = bus485_recv(context->bus485, resp, ARRAY_SIZE(resp), 3000);
+    ret = bus485_recv(context->bus485, resp, ARRAY_SIZE(resp), CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
     if(ret < 0){
         LOG_WRN("get ce318 response error: %d", ret);
         return ret;
@@ -233,7 +233,7 @@ int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * data, ui
     //Пока под вопросом нужна ли дополнительное доскачивание, если он за раз всегда вычитывает
     if(resp[ret-1] != SMP_END){
         
-        ret = bus485_recv(context->bus485, resp + ret, ARRAY_SIZE(resp) - ret, 1000);
+        ret = bus485_recv(context->bus485, resp + ret, ARRAY_SIZE(resp) - ret, CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
         if(ret < 0){
             LOG_WRN("get ce318 second response error: %d", ret);
             return ret;

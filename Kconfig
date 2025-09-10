@@ -23,6 +23,10 @@ if STRIM_METERS
     config STRIM_METERS_MAIN_THREAD_PRIORITY
         int "Main thread priority"
         default 8
+
+    config STRIM_METERS_BUS485_RESPONSE_TIMEOUT
+        int "bus485 response timeout ms"
+        default 3000
     
     config STRIM_METERS_ITEMS_MAX_COUNT
         int "Meters max count"

@@ -17,7 +17,7 @@ static int32_t meters_spm90_get_responce(meters_context_t * context, uint8_t id,
     if(expected > sizeof(resp))
         return -E2BIG;
                                         
-    ret = bus485_recv(context->bus485, resp, ARRAY_SIZE(resp), 3000);
+    ret = bus485_recv(context->bus485, resp, ARRAY_SIZE(resp), CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
     if(ret < 0)
         return ret;
 
