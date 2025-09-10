@@ -229,8 +229,8 @@ int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * data, ui
     }
 
     size += ret;
-    LOG_HEXDUMP_WRN(resp, size, "Rcv buff");
 
+    //Пока под вопросом нужна ли дополнительное доскачивание, если он за раз всегда вычитывает
     if(resp[ret-1] != SMP_END){
         
         ret = bus485_recv(context->bus485, resp + ret, ARRAY_SIZE(resp) - ret, 1000);
@@ -242,15 +242,13 @@ int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * data, ui
             size += ret;
     }
 
-    LOG_HEXDUMP_WRN(resp, size, "Rcv buff");
-
     if(size > length){
         LOG_WRN("get ce318 check length error: %d", ret);
         return -EMSGSIZE;
     }
 
     if(resp[size - 1] != SMP_END || resp[0] != SMP_END){
-        LOG_WRN("get ce318 0xC0 error: %d", ret);
+        LOG_WRN("tail ce318 0xC0 error: %d", ret);
         return -EBADMSG;
     }
     
@@ -267,7 +265,6 @@ int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * data, ui
         LOG_WRN("get ce318 crc error: %d", ret);
         return -EBADMSG;
     }
-    LOG_WRN("ce318 pack receive success\r\n");
     memcpy(data, pack + 7, size - 9);
 
     return size - 9;
