@@ -64,8 +64,6 @@ typedef enum
 } SMP_DataSingleEx_t;
 
 
-//#define BIT(_n_)  (1 << _n_)
-
 typedef enum
 {
   SMP_DataSingleExFlags_O = BIT(1),
@@ -153,23 +151,24 @@ static int32_t ce318_dff_parce(const uint8_t * buffer, uint32_t remaining,
     uint64_t result = 0;
     uint8_t minus = false;
 
-    if(signed_field){
-        minus = (*ch & 0x40) != 0;
-    }
-
+    
     if(remaining == 0)
-        return -4;
-
+    return -4;
+    
     do{
         if(field_size > DFF_FIELD_MAX_SIZE)
-            return -3;
+        return -3;
         
         result |= (*ch & 0x7F) << (field_size * 7);
         field_size++;
         
+        if(signed_field){
+            minus = (*ch & 0x40) != 0;
+        }
+        
     }while((*ch++ & DFF_FLAG) != 0);
 
-    if(minus){
+    if(signed_field && minus){
        result |= 0xffffffffffffffff << (field_size * 7);
     }
 
