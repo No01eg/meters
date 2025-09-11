@@ -89,7 +89,7 @@ static int32_t meters_initialize_context(meters_context_t *context,
     for(uint32_t i = 0; i < context->item_count; i++){
         meters_type_t type = context->parameters[i].type;
         if(type >= meters_type_lastIndex){
-            LOG_ERR("meter %u have unknown type %u\r\n", i, context->parameters[i].type);
+            LOG_ERR("meter %u have unknown type %u", i, context->parameters[i].type);
             context->item_count = 0;
             return -ENOMSG;
         }
@@ -221,7 +221,12 @@ int32_t meters_init(meter_parameters_t *parameters, uint8_t count){
     (void)ret;
 
 #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
-    context->bus485 = DEVICE_DT_GET(DT_CHOSEN(strim_meter_bus485));
+    context->bus485 = DEVICE_DT_GET_OR_NULL(DT_CHOSEN(strim_meter_bus485));
+    if(context->bus485 == NULL){
+        LOG_ERR("bus485 init error nullpoint");
+        return -ENXIO;
+    }
+
     meters_poll485_thread_run(context);
 #endif
 

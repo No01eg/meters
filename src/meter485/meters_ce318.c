@@ -1,5 +1,6 @@
 #include "meters_ce318.h"
 #include "bus485.h"
+#include <zephyr/sys/util_macro.h>
 
 LOG_MODULE_DECLARE(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
@@ -63,7 +64,7 @@ typedef enum
 } SMP_DataSingleEx_t;
 
 
-#define BIT(_n_)  (1 << _n_)
+//#define BIT(_n_)  (1 << _n_)
 
 typedef enum
 {
@@ -281,10 +282,11 @@ int32_t meters_ce318_get_voltage(meters_context_t *context, uint32_t baudrate,
 
   int32_t ret = meters_ce318_send_packet(context, 4800, address, query, sizeof(query));
 
-  if (ret != 0)
+  if (ret != 0) {
     return ret;
+  }
 
-    uint8_t response[256];
+  uint8_t response[256];
   ret = meters_ce318_get_response(context, response, sizeof(response));
   if(ret < 0){
         bus485_release(context->bus485);
