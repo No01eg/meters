@@ -23,7 +23,7 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
     }
     shell_print(shell, "set baudrate to  %u", baudrate);
 
-    int32_t ret = meters_spm90_get_values(context, id, baudrate, &value);
+    int32_t ret = meters_spm90_get_values(context, id, baudrate, &value, 0);
     if(ret == -ETIMEDOUT){
       shell_warn(shell, "meter %u no response", id);
       return 0;

@@ -43,7 +43,7 @@ static int32_t meters_spm90_get_responce(meters_context_t * context, uint8_t id,
 }
 
 int32_t meters_spm90_get_values(meters_context_t * context, uint16_t id, 
-                                uint16_t baudrate, meters_values_dc_t *shadow)
+                                uint16_t baudrate, meters_values_dc_t *shadow, uint32_t is_wait_before_send)
 {
     int32_t ret;
     uint8_t req[8] = {id, 0x03, 0x00, 0x00, 0x00, 0x06};
@@ -55,6 +55,9 @@ int32_t meters_spm90_get_values(meters_context_t * context, uint16_t id,
     bus485_lock(context->bus485);
     ret = bus485_set_baudrate(context->bus485, baudrate);
     bus485_flush(context->bus485);
+    if(is_wait_before_send)
+        k_sleep(K_MSEC(CONFIG_STRIM_SPM90_SILENSE_BEFORE_REQUEST));
+
     ret = bus485_send(context->bus485, req, 8);
     if(ret < 0){
         bus485_release(context->bus485);
@@ -83,13 +86,16 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
     meters_item_t * item = &context->items[item_idx];
     meter_parameters_t *param = &context->parameters[item_idx];
     meters_values_dc_t * shadow = &item->data.spm90.shadow;
+
+    uint32_t is_wait_before_send = 0;
     
     if(!item->is_valid_values) {
         if(k_uptime_get_32() - timemark_error_receive < CONFIG_STRIM_SPM90_WAIT_AFTER_ERROR)
             return 0;
+        is_wait_before_send = 1;
     }
 
-    ret = meters_spm90_get_values(context, param->address, param->baudrate, shadow);
+    ret = meters_spm90_get_values(context, param->address, param->baudrate, shadow, is_wait_before_send);
     if(ret == 0){
         item->bad_responce_count = 0;
         meters_values_t data = {.DC = *shadow, .type = meters_current_type_dc};
@@ -106,6 +112,7 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
             LOG_DBG("spm90 exclude of poll next %d ms", CONFIG_STRIM_SPM90_WAIT_AFTER_ERROR);
         }
     }
+    is_wait_before_send = 0;
     return 0;
 }
 
