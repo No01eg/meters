@@ -279,7 +279,7 @@ int32_t meters_ce318_get_voltage(meters_context_t *context, uint32_t baudrate,
 
   int64_t value[3];
 
-  int32_t ret = meters_ce318_send_packet(context, 4800, address, query, sizeof(query));
+  int32_t ret = meters_ce318_send_packet(context, baudrate, address, query, sizeof(query));
 
   if (ret != 0) {
     return ret;
@@ -308,6 +308,44 @@ int32_t meters_ce318_get_voltage(meters_context_t *context, uint32_t baudrate,
   return 0;
 }
 
+int32_t meters_ce318_get_current(meters_context_t *context, uint32_t baudrate, 
+                                uint32_t address, float current[3])
+{
+  uint8_t query[] = {SMP_Command_GetDataSingleEx, SMP_NO_DFF, SMP_DataSingleEx_Current, 
+                     SMP_DataSingleExFlags_A | SMP_DataSingleExFlags_B | SMP_DataSingleExFlags_C};
+
+
+  int64_t value[3];
+
+  int32_t ret = meters_ce318_send_packet(context, baudrate, address, query, sizeof(query));
+
+  if (ret != 0) {
+    return ret;
+  }
+
+  uint8_t response[256];
+  ret = meters_ce318_get_response(context, response, sizeof(response));
+  if(ret < 0){
+        bus485_release(context->bus485);
+      return ret;
+  }
+  bus485_release(context->bus485);
+
+  int32_t offset = ce318_dff_parce(response + 3, ret, &value[0], 1);
+  offset += ce318_dff_parce(response + offset + 3, ret - offset, &value[1], 1);
+  offset += ce318_dff_parce(response + offset + 3, ret - offset, &value[2], 1);
+
+  if (current != NULL)
+  {
+    for (uint32_t i = 0; i < 3; i++)
+    {
+      current[i] = value[i] / 1000.0;
+    }
+  }
+
+  return 0;
+}
+
 int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
 {
     int32_t ret;
@@ -317,7 +355,15 @@ int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
 
     ret = meters_ce318_get_voltage(context, param->baudrate, 
                                 param->address, shadow->voltage);
-                                
+    if(ret < 0)
+        goto ce_318_end_poll;
+    
+    ret = meters_ce318_get_current(context, param->baudrate, 
+                                param->address, shadow->current);
+    if(ret < 0)
+        goto ce_318_end_poll;
+    
+    ce_318_end_poll:
     if(ret == 0){
         item->bad_responce_count = 0;
         meters_values_t data = {.AC = *shadow, .type = meters_current_type_ac};
