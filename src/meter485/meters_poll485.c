@@ -13,9 +13,7 @@ static void meters_poll_bus485_Thread(void *args0, void *args1, void *args2){
 
     while(true){
 
-        //meters data call
         for(uint32_t i = 0; i < context->item_count; i++){
-            //TODO! set periodic call meters data
             meters_read_t read_func = meters_get_read_func(context->parameters[i].type);
             if (read_func != NULL) {
                 ret = read_func(context, i);
@@ -30,7 +28,6 @@ static void meters_poll_bus485_Thread(void *args0, void *args1, void *args2){
     }
 
     exit_poll485_thread:
-    //LOG_ERR("thread %s stopped\r\n", log_strdup(k_thread_name_get(k_current_get())));
 }
 
 void meters_poll485_thread_run(meters_context_t *context){

@@ -78,10 +78,17 @@ int32_t meters_spm90_get_values(meters_context_t * context, uint16_t id,
 
 int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
 {
+    static uint32_t timemark_error_receive;
     int32_t ret;
     meters_item_t * item = &context->items[item_idx];
     meter_parameters_t *param = &context->parameters[item_idx];
     meters_values_dc_t * shadow = &item->data.spm90.shadow;
+    
+    if(!item->is_valid_values) {
+        if(k_uptime_get_32() - timemark_error_receive < CONFIG_STRIM_SPM90_WAIT_AFTER_ERROR)
+            return 0;
+    }
+
     ret = meters_spm90_get_values(context, param->address, param->baudrate, shadow);
     if(ret == 0){
         item->bad_responce_count = 0;
@@ -95,6 +102,8 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
                 item->is_valid_values = false;
             }
             k_mutex_unlock(&context->data_access_mutex);
+            timemark_error_receive = k_uptime_get_32();
+            LOG_DBG("spm90 exclude of poll next %d ms", CONFIG_STRIM_SPM90_WAIT_AFTER_ERROR);
         }
     }
     return 0;

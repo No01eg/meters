@@ -28,6 +28,14 @@ if STRIM_METERS
         int "bus485 response timeout ms"
         default 3000
     
+    config STRIM_SPM90_WAIT_AFTER_ERROR
+        int "SPM90 wait after error ms"
+        default 5000
+    
+    config STRIM_SPM90_SILENSE_BEFORE_REQUEST
+        int "SPM90 wait before request ms when error"
+        default 1000
+    
     config STRIM_METERS_ITEMS_MAX_COUNT
         int "Meters max count"
         default 5
