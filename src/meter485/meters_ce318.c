@@ -400,7 +400,7 @@ int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
         goto ce_318_end_poll;
     
     ret = meters_ce318_get_energy_active(context, param->baudrate, 
-                                param->address, shadow->energy_active);
+                                param->address, &shadow->energy_active);
     if(ret < 0)
         goto ce_318_end_poll;
     
