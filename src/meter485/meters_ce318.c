@@ -358,6 +358,30 @@ int32_t meters_ce318_get_current(meters_context_t *context, uint32_t baudrate,
   return 0;
 }
 
+int32_t meters_ce318_get_energy_active(meters_context_t * context, uint32_t baudrate,
+                                uint32_t address, uint64_t * energy)
+{
+  uint8_t query[] = {SMP_Command_GetDataSingle, SMP_NO_DFF, 
+                    SMP_DataSingle_EnergyRegisteredActivePlus, 0};
+  int64_t value;
+
+  ce318_poll_data_t poll_data = {
+    .address = address,
+    .baudrate = baudrate,
+    .query = query,
+    .query_length = sizeof(query),
+    .is_signed_values = 0
+  };
+  int32_t ret = meters_ce318_poll(context, &poll_data, &value, 1);
+  if (ret < 0)
+    return ret;
+
+  if (energy != NULL)
+    *energy = (uint64_t)(value * 360); // десятитысячные доли киловатт-часов в ватт-секунды.
+
+  return 0;
+}
+
 int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
 {
     int32_t ret;
@@ -372,6 +396,11 @@ int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
     
     ret = meters_ce318_get_current(context, param->baudrate, 
                                 param->address, shadow->current);
+    if(ret < 0)
+        goto ce_318_end_poll;
+    
+    ret = meters_ce318_get_energy_active(context, param->baudrate, 
+                                param->address, shadow->energy_active);
     if(ret < 0)
         goto ce_318_end_poll;
     
