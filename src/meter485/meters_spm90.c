@@ -113,6 +113,7 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
         }
     }
     is_wait_before_send = 0;
+    
     return 0;
 }
 

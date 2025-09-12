@@ -177,7 +177,7 @@ static int32_t ce318_dff_parce(const uint8_t * buffer, uint32_t remaining,
     return field_size;
 }
 
-int32_t meters_ce318_send_packet(meters_context_t * context, 
+static int32_t meters_ce318_send_packet(meters_context_t * context, 
                                 uint32_t baudrate, uint32_t address, 
                                 const uint8_t * data, uint32_t length)
 {
@@ -216,7 +216,7 @@ int32_t meters_ce318_send_packet(meters_context_t * context,
     return 0;
 }
 
-int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * data, uint32_t length)
+static int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * data, uint32_t length)
 {   
     int32_t ret;
     uint8_t resp[256];
@@ -270,32 +270,51 @@ int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * data, ui
     return size - 9;
 }
 
+static int32_t meters_ce318_poll(meters_context_t *context, ce318_poll_data_t *poll_data, 
+                        int64_t *values, uint32_t values_count)
+{
+    int32_t ret;
+
+    ret = meters_ce318_send_packet(context, poll_data->baudrate, poll_data->address,
+                                poll_data->query, poll_data->query_length);
+    if(ret != 0){
+        return ret;
+    }
+
+    uint8_t response[256];
+    ret = meters_ce318_get_response(context, response, sizeof(response));
+    if(ret < 0){
+            bus485_release(context->bus485);
+        return ret;
+    }
+    bus485_release(context->bus485);
+
+    int32_t offset = 0;
+
+    for(uint32_t i = 0; i < values_count; i++)
+        offset += ce318_dff_parce(response + offset + 3, ret - offset, &values[i], poll_data->is_signed_values);
+
+    return 0;
+}
+
 int32_t meters_ce318_get_voltage(meters_context_t *context, uint32_t baudrate, 
                                 uint32_t address, float voltage[3])
 {
   uint8_t query[] = {SMP_Command_GetDataSingleEx, SMP_NO_DFF, SMP_DataSingleEx_Voltage, 
                      SMP_DataSingleExFlags_A | SMP_DataSingleExFlags_B | SMP_DataSingleExFlags_C};
 
-
   int64_t value[3];
 
-  int32_t ret = meters_ce318_send_packet(context, baudrate, address, query, sizeof(query));
-
-  if (ret != 0) {
+  ce318_poll_data_t poll_data = {
+    .address = address,
+    .baudrate = baudrate,
+    .query = query,
+    .query_length = sizeof(query),
+    .is_signed_values = 1
+  };
+  int32_t ret = meters_ce318_poll(context, &poll_data, value, 3);
+  if(ret < 0)
     return ret;
-  }
-
-  uint8_t response[256];
-  ret = meters_ce318_get_response(context, response, sizeof(response));
-  if(ret < 0){
-        bus485_release(context->bus485);
-      return ret;
-  }
-  bus485_release(context->bus485);
-
-  int32_t offset = ce318_dff_parce(response + 3, ret, &value[0], 1);
-  offset += ce318_dff_parce(response+offset + 3, ret-offset, &value[1], 1);
-  offset += ce318_dff_parce(response+offset + 3, ret-offset, &value[2], 1);
 
   if (voltage != NULL)
   {
@@ -317,23 +336,16 @@ int32_t meters_ce318_get_current(meters_context_t *context, uint32_t baudrate,
 
   int64_t value[3];
 
-  int32_t ret = meters_ce318_send_packet(context, baudrate, address, query, sizeof(query));
-
-  if (ret != 0) {
+  ce318_poll_data_t poll_data = {
+    .address = address,
+    .baudrate = baudrate,
+    .query = query,
+    .query_length = sizeof(query),
+    .is_signed_values = 1
+  };
+  int32_t ret = meters_ce318_poll(context, &poll_data, value, 3);
+  if (ret < 0)
     return ret;
-  }
-
-  uint8_t response[256];
-  ret = meters_ce318_get_response(context, response, sizeof(response));
-  if(ret < 0){
-        bus485_release(context->bus485);
-      return ret;
-  }
-  bus485_release(context->bus485);
-
-  int32_t offset = ce318_dff_parce(response + 3, ret, &value[0], 1);
-  offset += ce318_dff_parce(response + offset + 3, ret - offset, &value[1], 1);
-  offset += ce318_dff_parce(response + offset + 3, ret - offset, &value[2], 1);
 
   if (current != NULL)
   {
