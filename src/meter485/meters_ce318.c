@@ -16,12 +16,12 @@ enum{CE318_ERROR_THRESHOLD = 3};
 
 typedef enum
 {
-  SMP_Command_GetDataSingle     =  1,
-  SMP_Command_GetDataMultiple   =  2,
-  SMP_Command_GetDataSingleEx   = 10,
-  SMP_Command_GetDataMultipleEx = 11,
+  smp_command_get_data_single     =  1,
+  smp_command_get_data_multiple   =  2,
+  smp_command_get_data_singleEx   = 10,
+  smp_command_get_data_multipleEx = 11,
 
-} SMP_Command_t;
+} smp_command_t;
 
 typedef enum
 {
@@ -49,7 +49,7 @@ typedef enum
   SMP_DataSingle_TotalPower_mvar                = 107,
   
 
-} SMP_DataSingle_t;
+} smp_data_single_t;
 
 typedef enum
 {
@@ -61,7 +61,7 @@ typedef enum
   SMP_DataSingleEx_PowerFactor    =  25,
   SMP_DataSingleEx_Frequency      =  26,
 
-} SMP_DataSingleEx_t;
+} smp_data_singleEx_t;
 
 
 typedef enum
@@ -71,7 +71,16 @@ typedef enum
   SMP_DataSingleExFlags_B = BIT(3),
   SMP_DataSingleExFlags_C = BIT(4),
 
-} SMP_DataSingleExFlags_t;
+} smp_data_singleEx_flags_t;
+
+typedef enum
+{
+  smp_phase_a   = 0,
+  smp_phase_b   = 1,
+  smp_phase_c   = 2,
+  smp_phase_abc = 3,
+
+} smp_phase_t;
 
 
 #define SMP_NO_DFF        (0x00)
@@ -175,6 +184,33 @@ static int32_t ce318_dff_parce(const uint8_t * buffer, uint32_t remaining,
     *field = (int64_t)result;
 
     return field_size;
+}
+
+static uint8_t meters_ce318_get_phase(smp_phase_t phase)
+{
+  uint8_t flags = 0;
+
+  switch (phase)
+  {
+    case smp_phase_a:
+      flags = SMP_DataSingleExFlags_A;
+      break;
+
+    case smp_phase_b:
+      flags = SMP_DataSingleExFlags_B;
+      break;
+
+    case smp_phase_c:
+      flags = SMP_DataSingleExFlags_C;
+      break;
+
+    case smp_phase_abc:
+    default:
+      flags = SMP_DataSingleExFlags_O;
+      break;
+  }
+
+  return flags;
 }
 
 static int32_t meters_ce318_send_packet(meters_context_t * context, 
@@ -307,7 +343,7 @@ static int32_t meters_ce318_poll(meters_context_t *context, ce318_poll_data_t *p
 int32_t meters_ce318_get_voltage(meters_context_t *context, uint32_t baudrate, 
                                 uint32_t address, float voltage[3])
 {
-  uint8_t query[] = {SMP_Command_GetDataSingleEx, SMP_NO_DFF, SMP_DataSingleEx_Voltage, 
+  uint8_t query[] = {smp_command_get_data_singleEx, SMP_NO_DFF, SMP_DataSingleEx_Voltage, 
                      SMP_DataSingleExFlags_A | SMP_DataSingleExFlags_B | SMP_DataSingleExFlags_C};
 
   int64_t value[3];
@@ -338,7 +374,7 @@ int32_t meters_ce318_get_voltage(meters_context_t *context, uint32_t baudrate,
 int32_t meters_ce318_get_current(meters_context_t *context, uint32_t baudrate, 
                                 uint32_t address, float current[3])
 {
-  uint8_t query[] = {SMP_Command_GetDataSingleEx, SMP_NO_DFF, SMP_DataSingleEx_Current, 
+  uint8_t query[] = {smp_command_get_data_singleEx, SMP_NO_DFF, SMP_DataSingleEx_Current, 
                      SMP_DataSingleExFlags_A | SMP_DataSingleExFlags_B | SMP_DataSingleExFlags_C};
 
 
@@ -369,7 +405,7 @@ int32_t meters_ce318_get_current(meters_context_t *context, uint32_t baudrate,
 int32_t meters_ce318_get_energy_active(meters_context_t * context, uint32_t baudrate,
                                 uint32_t address, uint64_t * energy)
 {
-  uint8_t query[] = {SMP_Command_GetDataSingle, SMP_NO_DFF, 
+  uint8_t query[] = {smp_command_get_data_single, SMP_NO_DFF, 
                     SMP_DataSingle_EnergyRegisteredActivePlus, 0};
   int64_t value;
 
@@ -389,6 +425,32 @@ int32_t meters_ce318_get_energy_active(meters_context_t * context, uint32_t baud
 
   return 0;
 }
+
+int32_t meters_ce318_get_power_active(meters_context_t * context, uint32_t baudrate,
+                                uint32_t address, float *power, smp_phase_t phase)
+{
+    uint8_t query[] = {smp_command_get_data_singleEx, SMP_NO_DFF, 
+                    SMP_DataSingleEx_PowerActive, 0};
+    query[3] = meters_ce318_get_phase(phase);
+    
+    int64_t value;  
+
+    ce318_poll_data_t poll_data = {
+        .address = address,
+        .baudrate = baudrate,
+        .query = query,
+        .query_length = sizeof(query),
+        .is_signed_values = 0
+    };
+    int32_t ret = meters_ce318_poll(context, &poll_data, &value, 1);
+    if (ret < 0)
+        return ret;
+
+    if(power != NULL){
+        *power = value;
+    }
+    return 0;
+}                                
 
 int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
 {
@@ -417,6 +479,13 @@ int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
         LOG_WRN("ce318 get energy error: %d", ret);
         goto ce_318_end_poll;
     }
+
+    ret = meters_ce318_get_power_active(context, param->baudrate,
+                                param->address, &shadow->power_active, smp_phase_abc);
+    if(ret < 0){
+        LOG_WRN("ce318 get power error: %d", ret);
+        goto ce_318_end_poll;
+    }                                
     
     ce_318_end_poll:
     if(ret == 0){
