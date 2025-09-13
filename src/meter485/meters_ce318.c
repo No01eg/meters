@@ -208,10 +208,17 @@ static int32_t meters_ce318_send_packet(meters_context_t * context,
 
     bus485_lock(context->bus485);
     ret = bus485_set_baudrate(context->bus485, baudrate);
+    if(ret < 0){
+        bus485_release(context->bus485);
+        LOG_ERR("set baudrate error: %d", ret);
+        return ret;
+    }
+
     bus485_flush(context->bus485);
     ret = bus485_send(context->bus485, pack, count);
     if(ret < 0){
         bus485_release(context->bus485);
+        return ret;
     }
     return 0;
 }
@@ -313,8 +320,9 @@ int32_t meters_ce318_get_voltage(meters_context_t *context, uint32_t baudrate,
     .is_signed_values = 1
   };
   int32_t ret = meters_ce318_poll(context, &poll_data, value, 3);
-  if(ret < 0)
+  if(ret < 0){
     return ret;
+  }
 
   if (voltage != NULL)
   {
@@ -391,18 +399,24 @@ int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
 
     ret = meters_ce318_get_voltage(context, param->baudrate, 
                                 param->address, shadow->voltage);
-    if(ret < 0)
+    if(ret < 0){
+        LOG_WRN("ce318 get voltage error: %d", ret);
         goto ce_318_end_poll;
+    }
     
     ret = meters_ce318_get_current(context, param->baudrate, 
                                 param->address, shadow->current);
-    if(ret < 0)
+    if(ret < 0){
+        LOG_WRN("ce318 get current error: %d", ret);
         goto ce_318_end_poll;
+    }
     
     ret = meters_ce318_get_energy_active(context, param->baudrate, 
                                 param->address, &shadow->energy_active);
-    if(ret < 0)
+    if(ret < 0){
+        LOG_WRN("ce318 get energy error: %d", ret);
         goto ce_318_end_poll;
+    }
     
     ce_318_end_poll:
     if(ret == 0){
