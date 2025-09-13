@@ -53,8 +53,16 @@ int32_t meters_spm90_get_values(meters_context_t * context, uint16_t id,
     req[7] = (crc >> 8) & 0xff;
     
     bus485_lock(context->bus485);
+    
     ret = bus485_set_baudrate(context->bus485, baudrate);
+    if(ret < 0){
+        LOG_ERR("set baudrate error: %d", ret);
+        bus485_release(context->bus485);
+        return ret;
+    }
+
     bus485_flush(context->bus485);
+    
     if(is_wait_before_send)
         k_sleep(K_MSEC(CONFIG_STRIM_SPM90_SILENSE_BEFORE_REQUEST));
 
@@ -64,6 +72,7 @@ int32_t meters_spm90_get_values(meters_context_t * context, uint16_t id,
         bus485_release(context->bus485);
         return ret;
     }
+
     ret = meters_spm90_get_responce(context, id, registers, ARRAY_SIZE(registers));
     
     if(ret == 0){
@@ -92,7 +101,9 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
     
     if(!item->is_valid_values) {
         if(k_uptime_get_32() - timemark_error_receive < CONFIG_STRIM_SPM90_WAIT_AFTER_ERROR)
-            return 0;
+            return 0;//пропускаем опрос, пока не вышло время
+        
+        timemark_error_receive = 0;
         is_wait_before_send = 1;
     }
 
@@ -113,6 +124,10 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
             LOG_DBG("spm90 exclude of poll next %d ms", CONFIG_STRIM_SPM90_WAIT_AFTER_ERROR);
 
         }
+        else if(!item->is_valid_values && timemark_error_receive == 0){
+            timemark_error_receive = k_uptime_get_32();
+        }
+
         if((ret != -ETIMEDOUT) && (ret != -EILSEQ) && (ret != -EBADMSG) &&
            (ret != -EADDRNOTAVAIL) && (ret != -ENODATA) && (ret != -EMSGSIZE))
             LOG_ERR("read spm90 %d error: %d", param->address, ret);
