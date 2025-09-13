@@ -60,6 +60,7 @@ int32_t meters_spm90_get_values(meters_context_t * context, uint16_t id,
 
     ret = bus485_send(context->bus485, req, 8);
     if(ret < 0){
+        LOG_ERR("send spm90 query error: %d", ret);
         bus485_release(context->bus485);
         return ret;
     }
@@ -110,7 +111,11 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
             k_mutex_unlock(&context->data_access_mutex);
             timemark_error_receive = k_uptime_get_32();
             LOG_DBG("spm90 exclude of poll next %d ms", CONFIG_STRIM_SPM90_WAIT_AFTER_ERROR);
+
         }
+        if((ret != -ETIMEDOUT) && (ret != -EILSEQ) && (ret != -EBADMSG) &&
+           (ret != -EADDRNOTAVAIL) && (ret != -ENODATA) && (ret != -EMSGSIZE))
+            LOG_ERR("read spm90 %d error: %d", param->address, ret);
     }
     is_wait_before_send = 0;
     
