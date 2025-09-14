@@ -25,51 +25,51 @@ typedef enum
 
 typedef enum
 {
-  SMP_DataSingle_EnergyRegisteredActivePlus     =   1,
-  SMP_DataSingle_EnergyRegisteredActiveMinus    =   2,
-  SMP_DataSingle_EnergyRegisteredReactivePlus   =   3,
-  SMP_DataSingle_EnergyRegisteredReactiveMinus  =   4,
+  smp_data_single_energy_reg_active_plus     =   1,
+  smp_data_single_energy_reg_active_minus    =   2,
+  smp_data_single_energy_reg_reactive_plus   =   3,
+  smp_data_single_energy_reg_reactive_minus  =   4,
 
-  SMP_DataSingle_TotalPower                     =  13,
-  SMP_DataSingle_PowerActivePlus                =  14,
-  SMP_DataSingle_PowerActiveMinus               =  15,
-  SMP_DataSingle_PowerReactivePlus              =  16,
-  SMP_DataSingle_PowerReactiveMinus             =  17,
+  smp_data_single_total_power                =  13,
+  smp_data_single_power_active_plus          =  14,
+  smp_data_single_power_active_minus         =  15,
+  smp_data_single_power_reactive_plus        =  16,
+  smp_data_single_power_reactive_minus       =  17,
 
-  SMP_DataSingle_PowerFactor                    =  25,
-  SMP_DataSingle_Frequency                      =  26,
+  smp_data_single_power_factor               =  25,
+  smp_data_single_frequency                  =  26,
 
-  SMP_DataSingle_Temperature                    =  31,
-  SMP_DataSingle_Battery                        =  32,
+  smp_data_single_temperature                =  31,
+  smp_data_single_battery                    =  32,
 
-  SMP_DataSingle_Time                           =  49,
+  smp_data_single_time                       =  49,
 
-  SMP_DataSingle_TotalPower_mVA                 = 105,
-  SMP_DataSingle_TotalPower_mW                  = 106,
-  SMP_DataSingle_TotalPower_mvar                = 107,
+  smp_data_single_total_power_mVA            = 105,
+  smp_data_single_total_power_mW             = 106,
+  smp_data_single_total_power_mvar           = 107,
   
 
 } smp_data_single_t;
 
 typedef enum
 {
-  SMP_DataSingleEx_Power          =  13,
-  SMP_DataSingleEx_PowerActive    =  14,
-  SMP_DataSingleEx_PowerReactive  =  16,
-  SMP_DataSingleEx_Current        =  22,
-  SMP_DataSingleEx_Voltage        =  24,
-  SMP_DataSingleEx_PowerFactor    =  25,
-  SMP_DataSingleEx_Frequency      =  26,
+  smp_data_singleEx_power           =  13,
+  smp_data_singleEx_power_active    =  14,
+  smp_data_singleEx_power_reactive  =  16,
+  smp_data_singleEx_current         =  22,
+  smp_data_singleEx_voltage         =  24,
+  smp_data_singleEx_power_factor    =  25,
+  smp_data_singleEx_frequency       =  26,
 
 } smp_data_singleEx_t;
 
 
 typedef enum
 {
-  SMP_DataSingleExFlags_O = BIT(1),
-  SMP_DataSingleExFlags_A = BIT(2),
-  SMP_DataSingleExFlags_B = BIT(3),
-  SMP_DataSingleExFlags_C = BIT(4),
+  smp_data_singleEx_flag_O = BIT(1),
+  smp_data_singleEx_flag_a = BIT(2),
+  smp_data_singleEx_flag_b = BIT(3),
+  smp_data_singleEx_flag_c = BIT(4),
 
 } smp_data_singleEx_flags_t;
 
@@ -193,20 +193,20 @@ static uint8_t meters_ce318_get_phase(smp_phase_t phase)
   switch (phase)
   {
     case smp_phase_a:
-      flags = SMP_DataSingleExFlags_A;
+      flags = smp_data_singleEx_flag_a;
       break;
 
     case smp_phase_b:
-      flags = SMP_DataSingleExFlags_B;
+      flags = smp_data_singleEx_flag_b;
       break;
 
     case smp_phase_c:
-      flags = SMP_DataSingleExFlags_C;
+      flags = smp_data_singleEx_flag_c;
       break;
 
     case smp_phase_abc:
     default:
-      flags = SMP_DataSingleExFlags_O;
+      flags = smp_data_singleEx_flag_O;
       break;
   }
 
@@ -343,8 +343,8 @@ static int32_t meters_ce318_poll(meters_context_t *context, ce318_poll_data_t *p
 int32_t meters_ce318_get_voltage(meters_context_t *context, uint32_t baudrate, 
                                 uint32_t address, float voltage[3])
 {
-  uint8_t query[] = {smp_command_get_data_singleEx, SMP_NO_DFF, SMP_DataSingleEx_Voltage, 
-                     SMP_DataSingleExFlags_A | SMP_DataSingleExFlags_B | SMP_DataSingleExFlags_C};
+  uint8_t query[] = {smp_command_get_data_singleEx, SMP_NO_DFF, smp_data_singleEx_voltage, 
+                     smp_data_singleEx_flag_a | smp_data_singleEx_flag_b | smp_data_singleEx_flag_c};
 
   int64_t value[3];
 
@@ -374,8 +374,8 @@ int32_t meters_ce318_get_voltage(meters_context_t *context, uint32_t baudrate,
 int32_t meters_ce318_get_current(meters_context_t *context, uint32_t baudrate, 
                                 uint32_t address, float current[3])
 {
-  uint8_t query[] = {smp_command_get_data_singleEx, SMP_NO_DFF, SMP_DataSingleEx_Current, 
-                     SMP_DataSingleExFlags_A | SMP_DataSingleExFlags_B | SMP_DataSingleExFlags_C};
+  uint8_t query[] = {smp_command_get_data_singleEx, SMP_NO_DFF, smp_data_singleEx_current, 
+                     smp_data_singleEx_flag_a | smp_data_singleEx_flag_b | smp_data_singleEx_flag_c};
 
 
   int64_t value[3];
@@ -406,7 +406,7 @@ int32_t meters_ce318_get_energy_active(meters_context_t * context, uint32_t baud
                                 uint32_t address, uint64_t * energy)
 {
   uint8_t query[] = {smp_command_get_data_single, SMP_NO_DFF, 
-                    SMP_DataSingle_EnergyRegisteredActivePlus, 0};
+                    smp_data_single_energy_reg_active_plus, 0};
   int64_t value;
 
   ce318_poll_data_t poll_data = {
@@ -430,7 +430,7 @@ int32_t meters_ce318_get_power_active(meters_context_t * context, uint32_t baudr
                                 uint32_t address, float *power, smp_phase_t phase)
 {
     uint8_t query[] = {smp_command_get_data_singleEx, SMP_NO_DFF, 
-                    SMP_DataSingleEx_PowerActive, 0};
+                    smp_data_singleEx_power_active, 0};
     query[3] = meters_ce318_get_phase(phase);
     
     int64_t value;  
