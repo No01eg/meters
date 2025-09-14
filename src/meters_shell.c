@@ -1,5 +1,6 @@
 #include "meters_private.h"
 #include "meters_spm90.h"
+#include "meters_ce318.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +10,97 @@ static void get_meter_address(uint8_t * addr_str, uint32_t buffSize, meter_param
 static void shell_values(const struct shell * shell, meters_values_t *values, bool horizontal);
 
 #if CONFIG_STRIM_METERS_BUS485_ENABLE
+
+  typedef struct {
+    const uint8_t *name;
+    int32_t (*func)(const struct shell *shell, uint32_t address, uint32_t baudrate);
+  }meters_query_table_t;
+
+  static int32_t query_energy(const struct shell *shell, uint32_t address, uint32_t baudrate)
+  {
+    
+    meters_context_t * context = &meters_context;
+    uint64_t energy;
+    
+    int32_t ret = meters_ce318_get_energy_active(context, baudrate, address, &energy);
+    if(ret == 0){
+      uint64_t energy_Wh = energy / 3600;
+      uint32_t energy_kWh_fractional = energy_Wh % 1000;
+      uint32_t energy_kWh_integer = energy_Wh / 1000;
+      shell_print(shell, "ce318 energy = %6u.%03u  kWh", energy_kWh_integer, energy_kWh_fractional);
+    }
+    else
+      shell_warn(shell, "ce318 error = %d", ret);
+    
+    return 0;
+  }
+
+  static int32_t query_voltage(const struct shell *shell, uint32_t address, uint32_t baudrate)
+  {
+    meters_context_t * context = &meters_context;
+    float voltage[3];
+
+    int32_t ret = meters_ce318_get_voltage(context, baudrate, address, voltage);
+    if(ret == 0)
+      shell_print(shell, "ce318 voltage = %5.3f/%5.3f/%5.3f", (double)voltage[0], (double)voltage[1], (double)voltage[2]);
+    else
+      shell_warn(shell, "ce318 error = %d", ret);
+
+    return 0;
+  }
+
+  static meters_query_table_t meters_query_table[] = {
+    {"energy", query_energy},
+    {"voltage", query_voltage},
+  };
+
+  static int32_t ce318_query_cmd(const struct shell *shell,
+                                size_t argc, uint8_t **argv)
+  {
+    if(argc != 4){
+      shell_warn(shell, "incorrect arguments, enter <address> and <baudrate>");
+      return 0;  
+    }
+    for(uint32_t i = 0; i < ARRAY_SIZE(meters_query_table); i++) {
+      if(0 == strcmp(argv[1], meters_query_table[i].name)){
+        uint32_t address = strtol(argv[2], NULL, 10);
+        uint32_t baudrate = strtol(argv[3], NULL, 10);
+        int32_t ret = meters_query_table[i].func(shell, address, baudrate);
+        if(ret != 0)
+          shell_warn(shell, "query error: %d", ret);
+        break;
+      }
+    }
+    return 0;
+  }
+
+  static int32_t ce318_sample_cmd(const struct shell *shell,
+                                  size_t argc, uint8_t **argv)
+  {
+    shell_warn(shell, "ce318 sample query");
+    return 0;
+  }                                
+
+  static void cmd_query_get(size_t idx, struct shell_static_entry *entry)
+  {
+    if(idx < ARRAY_SIZE(meters_query_table)) {
+      entry->syntax = meters_query_table[idx].name;
+      entry->handler = NULL;
+      entry->subcmd = NULL;
+      entry->help = NULL;
+    }
+    else {
+      entry->syntax = NULL;
+    }
+  }
+
+  SHELL_DYNAMIC_CMD_CREATE(sub_ce318_query, cmd_query_get);
+
+  SHELL_STATIC_SUBCMD_SET_CREATE(sub_ce318,
+    SHELL_CMD_ARG(query, &sub_ce318_query,  "Query parameters", ce318_query_cmd, 4, 0),
+    SHELL_CMD(sample,     NULL,             "Query sample battery", ce318_sample_cmd),
+    SHELL_SUBCMD_SET_END
+  );
 
   static int32_t spm90_read_cmd(const struct shell * shell, size_t argc, uint8_t ** argv)
   {
@@ -242,7 +334,8 @@ static int32_t meters_testAC_cmd(const struct shell * shell,
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_meters,
   #if CONFIG_STRIM_METERS_BUS485_ENABLE
-    SHELL_CMD_ARG(spm90, NULL, "spm90 read", spm90_read_cmd, 2, 1),
+    SHELL_CMD(ce318, &sub_ce318,  "Energomera CE318BY", NULL),
+    SHELL_CMD_ARG(spm90, NULL,    "spm90 read",         spm90_read_cmd, 2, 1),
   #endif
   SHELL_CMD(testDC, NULL, "test to write data", meters_testDC_cmd),
   SHELL_CMD(testAC, NULL, "test to write data", meters_testAC_cmd),
