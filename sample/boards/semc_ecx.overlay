@@ -1,0 +1,12 @@
+/ { 
+    chosen {
+        strim,meter-bus485 = &rs485;
+    };
+};
+
+&lpuart2 {
+    rs485: bus485 {
+        compatible = "strim,bus485";
+        status="okay";
+    };
+};

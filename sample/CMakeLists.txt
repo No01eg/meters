@@ -6,3 +6,7 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(app)
 
 target_sources(app PRIVATE src/main.c)
+
+if(DEFINED CONFIG_BOARD_SEMC_ECX)
+  target_sources(app PRIVATE src/arm_mpu_custom_regions.c)
+endif()
