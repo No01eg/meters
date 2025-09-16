@@ -38,6 +38,7 @@ typedef struct{
     meters_data_t data;
     uint32_t is_valid_values;
     uint32_t timemark;  
+    uint32_t error_timemark;
     uint32_t bad_responce_count;
 }meters_item_t;
 
