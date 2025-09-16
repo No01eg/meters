@@ -254,6 +254,7 @@ static int32_t meters_ce318_send_packet(meters_context_t * context,
     ret = bus485_send(context->bus485, pack, count);
     if(ret < 0){
         bus485_release(context->bus485);
+        LOG_ERR("ce318 send error: %d", ret);
         return ret;
     }
     return 0;
@@ -267,7 +268,6 @@ static int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * d
                                            
     ret = bus485_recv(context->bus485, resp, ARRAY_SIZE(resp), CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
     if(ret < 0){
-        LOG_WRN("get ce318 response error: %d", ret);
         return ret;
     }
 
@@ -278,7 +278,6 @@ static int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * d
         
         ret = bus485_recv(context->bus485, resp + ret, ARRAY_SIZE(resp) - ret, CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
         if(ret < 0){
-            LOG_WRN("get ce318 second response error: %d", ret);
             return ret;
         }
         else 
@@ -286,12 +285,10 @@ static int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * d
     }
 
     if(size > length){
-        LOG_WRN("get ce318 check length error: %d", ret);
         return -EMSGSIZE;
     }
 
     if(resp[size - 1] != SMP_END || resp[0] != SMP_END){
-        LOG_WRN("tail ce318 0xC0 error: %d", ret);
         return -EBADMSG;
     }
     
@@ -305,7 +302,6 @@ static int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * d
     crc = ce318_get_crc16(crc, pack, size - 2);
     
     if(crc != crc_test){
-        LOG_WRN("get ce318 crc error: %d", ret);
         return -EBADMSG;
     }
     memcpy(data, pack + 7, size - 9);
@@ -462,33 +458,31 @@ int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
     ret = meters_ce318_get_voltage(context, param->baudrate, 
                                 param->address, shadow->voltage);
     if(ret < 0){
-        LOG_WRN("ce318 get voltage error: %d", ret);
         goto ce_318_end_poll;
     }
     
     ret = meters_ce318_get_current(context, param->baudrate, 
                                 param->address, shadow->current);
     if(ret < 0){
-        LOG_WRN("ce318 get current error: %d", ret);
         goto ce_318_end_poll;
     }
     
     ret = meters_ce318_get_energy_active(context, param->baudrate, 
                                 param->address, &shadow->energy_active);
     if(ret < 0){
-        LOG_WRN("ce318 get energy error: %d", ret);
         goto ce_318_end_poll;
     }
 
     ret = meters_ce318_get_power_active(context, param->baudrate,
                                 param->address, &shadow->power_active, smp_phase_abc);
     if(ret < 0){
-        LOG_WRN("ce318 get power error: %d", ret);
         goto ce_318_end_poll;
     }                                
     
     ce_318_end_poll:
     if(ret == 0){
+        if(!item->is_valid_values)
+          LOG_INF("ce318 poll recovered");
         item->bad_responce_count = 0;
         meters_values_t data = {.AC = *shadow, .type = meters_current_type_ac};
         meters_set_values(item_idx, &data);
@@ -501,6 +495,16 @@ int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
             }
             k_mutex_unlock(&context->data_access_mutex);
         }
+
+        if(item->is_valid_values){
+            if((ret != -ETIMEDOUT) && (ret != -EILSEQ) && (ret != -EBADMSG) &&
+            (ret != -EADDRNOTAVAIL) && (ret != -ENODATA) && (ret != -EMSGSIZE))
+                LOG_ERR("read ce318 %d error: %d", param->address, ret);
+            else {
+                LOG_DBG("ce318 error: %d", ret);
+            }
+        }
+
     }
     return 0;
 }
