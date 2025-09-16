@@ -130,10 +130,14 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
         else if(!item->is_valid_values && item->error_timemark == 0){
             item->error_timemark = k_uptime_get_32();
         }
-
-        if((ret != -ETIMEDOUT) && (ret != -EILSEQ) && (ret != -EBADMSG) &&
-           (ret != -EADDRNOTAVAIL) && (ret != -ENODATA) && (ret != -EMSGSIZE))
-            LOG_ERR("read spm90 %d error: %d", param->address, ret);
+        if(item->is_valid_values){
+            if((ret != -ETIMEDOUT) && (ret != -EILSEQ) && (ret != -EBADMSG) &&
+            (ret != -EADDRNOTAVAIL) && (ret != -ENODATA) && (ret != -EMSGSIZE))
+                LOG_ERR("read spm90 %d error: %d", param->address, ret);
+            else {
+                LOG_DBG("spm90 error: %d", ret);
+            }
+        }
     }
     is_wait_before_send = 0;
     
