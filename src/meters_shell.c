@@ -57,14 +57,20 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
   static int32_t ce318_query_cmd(const struct shell *shell,
                                 size_t argc, uint8_t **argv)
   {
-    if(argc != 4){
+    if(argc < 3){
       shell_warn(shell, "incorrect arguments, enter <address> and <baudrate>");
       return 0;  
     }
+
     for(uint32_t i = 0; i < ARRAY_SIZE(meters_query_table); i++) {
       if(0 == strcmp(argv[1], meters_query_table[i].name)){
         uint32_t address = strtol(argv[2], NULL, 10);
-        uint32_t baudrate = strtol(argv[3], NULL, 10);
+        
+        uint32_t baudrate = 4800;
+        if(argc == 4)
+          baudrate = strtol(argv[3], NULL, 10);
+        shell_print(shell, "set baudrate to  %u", baudrate);
+        
         int32_t ret = meters_query_table[i].func(shell, address, baudrate);
         if(ret != 0)
           shell_warn(shell, "query error: %d", ret);
