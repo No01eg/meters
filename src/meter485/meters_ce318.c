@@ -336,6 +336,33 @@ static int32_t meters_ce318_poll(meters_context_t *context, ce318_poll_data_t *p
     return 0;
 }
 
+int32_t meters_ce318_get_battery(meters_context_t *context, uint32_t baudrate,
+                                uint32_t address, uint8_t *hex)
+{
+    uint8_t query[] = {smp_command_get_data_single, SMP_NO_DFF, smp_data_single_battery};
+    
+    uint8_t data[8];
+
+    int32_t ret;
+
+    ret = meters_ce318_send_packet(context, baudrate, address,
+                                query, sizeof(query));
+    if(ret != 0){
+        return ret;
+    }
+
+
+    ret = meters_ce318_get_response(context, data, sizeof(data));
+    if(ret < 0){
+            bus485_release(context->bus485);
+        return ret;
+    }
+    bus485_release(context->bus485);
+    
+    memcpy(hex, data, ret);
+    return ret;
+}
+
 int32_t meters_ce318_get_voltage(meters_context_t *context, uint32_t baudrate, 
                                 uint32_t address, float voltage[3])
 {

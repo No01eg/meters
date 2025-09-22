@@ -83,7 +83,29 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
   static int32_t ce318_sample_cmd(const struct shell *shell,
                                   size_t argc, uint8_t **argv)
   {
-    shell_warn(shell, "ce318 sample query");
+    if(argc < 3){
+      shell_warn(shell, "incorrect arguments, enter <address> and <baudrate>");
+      return 0;  
+    }
+
+    uint32_t address = strtol(argv[2], NULL, 10);
+        
+    uint32_t baudrate = 4800;
+    if(argc == 4)
+      baudrate = strtol(argv[3], NULL, 10);
+    shell_print(shell, "set baudrate to  %u", baudrate);
+
+    meters_context_t * context = &meters_context;
+    uint8_t hex[8];
+
+    int32_t ret = meters_ce318_get_battery(context, baudrate, address, hex);
+    if(ret > 0){
+      shell_print(shell, "received: ");
+      shell_hexdump(shell, hex, ret);
+    }
+    else
+      shell_warn(shell, "ce318 error = %d", ret);
+
     return 0;
   }                                
 
@@ -104,7 +126,7 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
 
   SHELL_STATIC_SUBCMD_SET_CREATE(sub_ce318,
     SHELL_CMD_ARG(query, &sub_ce318_query,  "Query parameters", ce318_query_cmd, 4, 0),
-    SHELL_CMD(sample,     NULL,             "Query sample battery", ce318_sample_cmd),
+    SHELL_CMD_ARG(sample,     NULL,         "Query sample battery", ce318_sample_cmd, 4, 0),
     SHELL_SUBCMD_SET_END
   );
 
