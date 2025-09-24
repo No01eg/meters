@@ -5,7 +5,9 @@
 enum{MERCURY_ERROR_THRESHOLD = 3};
 enum{MERCURY_REQUEST_PAUSE = 30};
 
-static int32_t meters_mercury_send(meters_context_t *context, uint8_t address, 
+LOG_MODULE_DECLARE(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
+
+static int32_t meters_mercury_send(meters_context_t *context, uint8_t address, uint32_t baudrate,
                             const uint8_t *data, size_t length)
 {
     int32_t ret;
@@ -63,12 +65,12 @@ static int32_t meters_mercury_receive(meters_context_t *context, uint8_t address
     return ret - 3;
 }
 
-static int32_t meters_mercury_request(meters_context_t *context, uint8_t address, 
-                                    const uint8_t *req_data, uint32_t req_length
+static int32_t meters_mercury_request(meters_context_t *context, uint8_t address, uint32_t baudrate,
+                                    const uint8_t *req_data, uint32_t req_length,
                                     uint8_t *rcv_buffer, uint32_t rcv_length )
 {
     int32_t ret;
-    ret = meters_mercury_send(context, address, req_data, req_length);
+    ret = meters_mercury_send(context, address, baudrate, req_data, req_length);
     if(ret < 0)
         return ret;
     
