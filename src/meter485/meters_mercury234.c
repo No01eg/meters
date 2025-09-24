@@ -87,6 +87,51 @@ static int32_t meters_mercury_request(meters_context_t *context, uint8_t address
 
 }
 
+int32_t meters_mercury_ping(meters_context_t *context, uint8_t address, uint32_t baudrate)
+{
+    int32_t ret;
+
+    uint8_t req[1] = {0x00}; //проверка связи
+
+    uint8_t rcv[1];
+
+    ret = meters_mercury_request(context, address, baudrate, req, sizeof(req), rcv, sizeof(rcv));
+    if(ret < 0)
+        return ret;
+    
+    if(rcv[0]!= 0x00){
+        LOG_WRN("mercury ping error: %d", rcv[0]);
+        return -EPROTO;
+    }
+
+    return 0;
+}
+
+static int32_t meters_mercury_connect(meters_context_t *context, uint8_t address, uint32_t baudrate)
+{
+    int32_t ret;
+
+    uint8_t req[8] = {
+        0x01, //команда открытия сессии связи
+        0x01, // Первый уровень доступа (чтение)
+    };
+    const uint8_t * const password = "111111";//Пароль по умолчанию, согласно документации
+    strncpy(&req[2], password, 6);
+
+    uint8_t rcv[1];
+
+    ret = meters_mercury_request(context, address, baudrate, req, sizeof(req), rcv, sizeof(rcv));
+    if(ret < 0)
+        return ret;
+    
+    if(rcv[0]!= 0x00){
+        LOG_WRN("mercury open session error: %d", rcv[0]);
+        return -EPROTO;
+    }
+
+    return 0;
+}
+
 
 
 int32_t meters_mercury_init(meters_context_t * context, uint32_t item_idx){
