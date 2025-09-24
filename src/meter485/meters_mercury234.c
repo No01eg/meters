@@ -159,6 +159,31 @@ static int32_t meters_mercury_get_energy(meters_context_t *context, uint8_t addr
     return 0;
 }
 
+static int32_t meters_mercury_get_power(meters_context_t *context, uint8_t address, 
+                                        uint32_t baudrate, meters_values_ac_t *value)
+{
+    int32_t ret;
+
+    uint8_t req[] = {
+        0x08, // чтение параметров
+        0x11, // мгновенная мощность
+        0x00  // мощность активная по сумме фаз
+    };
+
+    uint8_t rcv[3];
+    ret = meters_mercury_request(context, address, baudrate, req, sizeof(req), rcv, sizeof(rcv));
+    if(ret < 0)
+        return ret;
+
+    uint32_t power_10mw = ((rcv[0] & 0x3F) << 16) |
+                           ( rcv[2]         <<  8) |
+                           ( rcv[1]              );
+
+    value->power_active = power_10mw / 100.0; //в Вт
+    
+    return 0;
+}
+
 
 int32_t meters_mercury_init(meters_context_t * context, uint32_t item_idx){
     if(item_idx >= context->item_count)
