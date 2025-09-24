@@ -209,6 +209,31 @@ static int32_t meters_mercury_get_voltage(meters_context_t * context, uint8_t ad
     return 0;
 }
 
+static int32_t meters_mercury_get_current(meters_context_t *context, uint8_t address,
+                                    uint32_t baudrate, meters_values_ac_t *value)
+{
+    int32_t ret;
+
+    uint8_t req[3] ={
+        0x08, //чтение параметров
+        0x16, //мгновенные значения по всем фазам
+        0x21  // чтение значения тока
+    };
+
+    uint8_t rcv[9];
+    ret = meters_mercury_request(context, address, baudrate, req, sizeof(req), rcv, sizeof(rcv));
+    if(ret < 0)
+        return ret;
+
+    for(uint32_t i = 0; i < 3; i++){
+        uint32_t current_ma = (rcv[0 + (3 * i)] << 16) |
+                                (rcv[2 + (3 * i)] << 8) |
+                                (rcv[1 + (3 * i)]);
+        value->current[i] = current_ma / 1000.0; //значение в вольт
+    }
+    return 0;
+}                                
+
 
 int32_t meters_mercury_init(meters_context_t * context, uint32_t item_idx){
     if(item_idx >= context->item_count)
