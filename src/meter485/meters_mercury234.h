@@ -5,5 +5,5 @@
 int32_t meters_mercury_read(meters_context_t * context, uint32_t item_idx);
 int32_t meters_mercury_init(meters_context_t * context, uint32_t item_idx);
 
-int32_t meters_mercury_get_values(meters_context_t * context, uint16_t id, 
-                                uint16_t baudrate, meters_values_dc_t *shadow);
+int32_t meters_mercury_ping(meters_context_t *context, uint8_t address, uint32_t baudrate);
+

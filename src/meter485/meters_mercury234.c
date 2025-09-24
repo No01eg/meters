@@ -232,7 +232,27 @@ static int32_t meters_mercury_get_current(meters_context_t *context, uint8_t add
         value->current[i] = current_ma / 1000.0; //значение в вольт
     }
     return 0;
-}                                
+}            
+
+static int32_t meters_mercury_disconnect(meters_context_t *context, uint8_t address, uint32_t baudrate)
+{
+    int32_t ret;
+    
+    uint8_t req[1] = {0x02}; //закрытие сессии
+
+    uint8_t rcv[1];
+
+    ret = meters_mercury_request(context, address, baudrate, req, sizeof(req), rcv, sizeof(rcv));
+    if(ret < 0)
+        return ret;
+    
+    if(rcv[0]!= 0x00){
+        LOG_WRN("mercury close session error: %d", rcv[0]);
+        return -EPROTO;
+    }
+
+    return 0;
+}
 
 
 int32_t meters_mercury_init(meters_context_t * context, uint32_t item_idx){
