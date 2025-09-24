@@ -132,6 +132,32 @@ static int32_t meters_mercury_connect(meters_context_t *context, uint8_t address
     return 0;
 }
 
+static int32_t meters_mercury_get_energy(meters_context_t *context, uint8_t address, 
+                                        uint32_t baudrate, meters_values_ac_t *value)
+{
+    int32_t ret;
+
+    uint8_t req[3] = {
+        0x05, // чтение активной и реактивной энергии 
+        0x00, // за все время со сброса
+        0x00, // по сумме тарифов
+    };
+
+    uint8_t rcv[16];
+
+    ret = meters_mercury_request(context, address, baudrate, req, sizeof(req), rcv, sizeof(rcv));
+    if(ret < 0)
+        return ret;
+    
+    uint32_t energy_wh = (rcv[1] << 24) |
+                         (rcv[0] << 16) |
+                         (rcv[3] << 8) |
+                         (rcv[2]);
+
+    value->energy_active = energy_wh * 3600; // в Вт*с
+
+    return 0;
+}
 
 
 int32_t meters_mercury_init(meters_context_t * context, uint32_t item_idx){
