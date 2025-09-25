@@ -4,6 +4,7 @@
 
 #include "meters_spm90.h"
 #include "meters_ce318.h"
+#include "meters_mercury234.h"
 #include "meters_poll485.h"
 
 LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
@@ -36,6 +37,10 @@ static const meters_description_type_t meters_description_type[meters_type_lastI
                             .values_type = meters_current_type_ac,
                             .init = meters_ce318_init,
                             .read = meters_ce318_read},
+    [meters_type_Mercury234] = {.name = "MERCURY234",
+                                .values_type = meters_current_type_ac,
+                                .init = meters_mercury_init,
+                                .read = meters_mercury_read},
 #endif                
 };
 

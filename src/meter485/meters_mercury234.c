@@ -1,6 +1,7 @@
 #include "meters_private.h"
 #include "bus485.h"
 #include <zephyr/sys/crc.h>
+#include <string.h>
 
 enum{MERCURY_ERROR_THRESHOLD = 3};
 enum{MERCURY_REQUEST_PAUSE = 30};
@@ -254,12 +255,95 @@ static int32_t meters_mercury_disconnect(meters_context_t *context, uint8_t addr
     return 0;
 }
 
+int32_t meters_mercury_read(meters_context_t *context, uint32_t item_idx)
+{
+    int32_t ret;
 
-int32_t meters_mercury_init(meters_context_t * context, uint32_t item_idx){
+    meters_item_t *item = &context->items[item_idx];
+    meter_parameters_t *param = &context->parameters[item_idx];
+    meters_values_ac_t *shadow = &item->data.mercury.shadow;
+
+    ret = meters_mercury_ping(context, param->address, param->baudrate);
+    if(ret < 0)
+        goto mercury_end_poll;
+    
+    k_sleep(K_MSEC(MERCURY_REQUEST_PAUSE));
+
+    ret = meters_mercury_connect(context, param->address, param->baudrate);
+    if(ret < 0)
+        goto mercury_end_poll;
+    
+    k_sleep(K_MSEC(MERCURY_REQUEST_PAUSE));
+
+    ret = meters_mercury_get_energy(context, param->address, param->baudrate, shadow);
+    if(ret < 0)
+        goto mercury_end_poll;
+    
+    k_sleep(K_MSEC(MERCURY_REQUEST_PAUSE));
+
+    ret = meters_mercury_get_power(context, param->address, param->baudrate, shadow);
+    if(ret < 0)
+        goto mercury_end_poll;
+    
+    k_sleep(K_MSEC(MERCURY_REQUEST_PAUSE));
+
+    ret = meters_mercury_get_voltage(context, param->address, param->baudrate, shadow);
+    if(ret < 0)
+        goto mercury_end_poll;
+    
+    k_sleep(K_MSEC(MERCURY_REQUEST_PAUSE));
+
+    ret = meters_mercury_get_current(context, param->address, param->baudrate, shadow);
+    if(ret < 0)
+        goto mercury_end_poll;
+    
+    k_sleep(K_MSEC(MERCURY_REQUEST_PAUSE));
+
+    ret = meters_mercury_disconnect(context, param->address, param->baudrate);
+    if(ret < 0)
+        goto mercury_end_poll;
+    
+    k_sleep(K_MSEC(MERCURY_REQUEST_PAUSE));
+
+    mercury_end_poll:
+    if(ret == 0){
+        if(!item->is_valid_values)
+          LOG_INF("mercury poll recovered");
+        item->bad_responce_count = 0;
+        meters_values_t data = {.AC = *shadow, .type = meters_current_type_ac};
+        meters_set_values(item_idx, &data);
+    }
+    else {
+        if(item->is_valid_values && (++item->bad_responce_count > MERCURY_ERROR_THRESHOLD)){
+            k_mutex_lock(&context->data_access_mutex, K_FOREVER);
+            {
+                item->is_valid_values = false;
+            }
+            k_mutex_unlock(&context->data_access_mutex);
+        }
+
+        if(item->is_valid_values){
+            if((ret != -ETIMEDOUT) && (ret != -EILSEQ) && (ret != -EBADMSG) &&
+            (ret != -EADDRNOTAVAIL) && (ret != -ENODATA) && (ret != -EMSGSIZE))
+                LOG_ERR("read mercury %d error: %d", param->address, ret);
+            else {
+                LOG_DBG("mercury error: %d", ret);
+            }
+        }
+
+    }
+    return 0;
+}
+
+
+int32_t meters_mercury_init(meters_context_t * context, uint32_t item_idx)
+{
     if(item_idx >= context->item_count)
         return -ERANGE;
     
     meters_item_t * item = &context->items[item_idx];
 
     item->bad_responce_count = MERCURY_ERROR_THRESHOLD;
+
+    return 0;
 }
