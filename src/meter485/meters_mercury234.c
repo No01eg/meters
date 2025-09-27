@@ -117,7 +117,7 @@ static int32_t meters_mercury_connect(meters_context_t *context, uint8_t address
         0x01, // Первый уровень доступа (чтение)
     };
     const uint8_t * const password = "111111";//Пароль по умолчанию, согласно документации
-    strncpy(&req[2], password, 6);
+    memcpy(&req[2], password, 6);
 
     uint8_t rcv[1];
 

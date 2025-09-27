@@ -1,6 +1,7 @@
 #include "meters_private.h"
 #include "meters_spm90.h"
 #include "meters_ce318.h"
+#include "meters_mercury234.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -127,6 +128,39 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
   SHELL_STATIC_SUBCMD_SET_CREATE(sub_ce318,
     SHELL_CMD_ARG(query, &sub_ce318_query,  "Query parameters", ce318_query_cmd, 4, 0),
     SHELL_CMD_ARG(sample,     NULL,         "Query sample battery", ce318_sample_cmd, 4, 0),
+    SHELL_SUBCMD_SET_END
+  );
+
+  static int32_t mercury_ping_cmd(const struct shell *shell, size_t argc, uint8_t **argv)
+  {
+    if(argc < 3){
+      shell_warn(shell, "incorrect arguments, enter <address> and <baudrate>");
+      return 0;  
+    }
+
+    uint32_t address = strtol(argv[2], NULL, 10);
+        
+    uint32_t baudrate = 9600;
+    if(argc == 4)
+      baudrate = strtol(argv[3], NULL, 10);
+    shell_print(shell, "set baudrate to  %u", baudrate);
+
+    meters_context_t * context = &meters_context;
+
+    shell_print(shell, "Ping address %u", address);
+
+    int32_t ret = meters_mercury_ping(context, address, baudrate);
+    if(ret == 0){
+      shell_print(shell, "mercury is available");
+    }
+    else
+      shell_warn(shell, "mercury error = %d", ret);
+
+    return 0;
+  }
+
+  SHELL_STATIC_SUBCMD_SET_CREATE(sub_mercury,
+    SHELL_CMD_ARG(ping, NULL, "Test link", mercury_ping_cmd, 2, 0),
     SHELL_SUBCMD_SET_END
   );
 
@@ -363,6 +397,7 @@ static int32_t meters_testAC_cmd(const struct shell * shell,
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_meters,
   #if CONFIG_STRIM_METERS_BUS485_ENABLE
     SHELL_CMD(ce318, &sub_ce318,  "Energomera CE318BY", NULL),
+    SHELL_CMD(mercury, &sub_mercury, "Mercury protocol", NULL),
     SHELL_CMD_ARG(spm90, NULL,    "spm90 read",         spm90_read_cmd, 2, 1),
   #endif
   SHELL_CMD(testdc, NULL, "test to write data", meters_testDC_cmd),
