@@ -133,16 +133,16 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
 
   static int32_t mercury_ping_cmd(const struct shell *shell, size_t argc, uint8_t **argv)
   {
-    if(argc < 3){
+    if(argc < 2){
       shell_warn(shell, "incorrect arguments, enter <address> and <baudrate>");
       return 0;  
     }
 
-    uint32_t address = strtol(argv[2], NULL, 10);
+    uint32_t address = strtol(argv[1], NULL, 10);
         
     uint32_t baudrate = 9600;
-    if(argc == 4)
-      baudrate = strtol(argv[3], NULL, 10);
+    if(argc == 3)
+      baudrate = strtol(argv[2], NULL, 10);
     shell_print(shell, "set baudrate to  %u", baudrate);
 
     meters_context_t * context = &meters_context;
@@ -160,7 +160,7 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
   }
 
   SHELL_STATIC_SUBCMD_SET_CREATE(sub_mercury,
-    SHELL_CMD_ARG(ping, NULL, "Test link", mercury_ping_cmd, 2, 0),
+    SHELL_CMD_ARG(ping, NULL, "Test link", mercury_ping_cmd, 2, 1),
     SHELL_SUBCMD_SET_END
   );
 
