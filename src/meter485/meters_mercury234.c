@@ -22,6 +22,8 @@ static int32_t meters_mercury_send(meters_context_t *context, uint8_t address, u
     query[count] = crc & 0xff;
     query[count + 1] = (crc >> 8) & 0xff;
 
+    count += 2;
+
     bus485_lock(context->bus485);
     
     ret = bus485_set_baudrate(context->bus485, baudrate);
@@ -58,7 +60,7 @@ static int32_t meters_mercury_receive(meters_context_t *context, uint8_t address
     if(crc != crc1)
         return -EBADMSG;
     
-    if(resp[0] != 0 || resp[0] != address)
+    if(resp[0] != 0 && resp[0] != address)
         return -EXDEV;
     
     memcpy(data, &resp[1], ret - 3);
