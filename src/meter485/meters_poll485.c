@@ -4,7 +4,7 @@ LOG_MODULE_DECLARE(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
 static K_THREAD_STACK_DEFINE(meters_basestack, CONFIG_STRIM_METERS_MAIN_STACK_SIZE);
 
-static void meters_poll_bus485_Thread(void *args0, void *args1, void *args2){
+static void meters_poll_bus485_thread(void *args0, void *args1, void *args2){
     meters_context_t *context = (meters_context_t*)args0;
     (void)args1;
     (void)args2;
@@ -36,7 +36,7 @@ void meters_poll485_thread_run(meters_context_t *context){
     context->poll485_stack_size = K_THREAD_STACK_SIZEOF(meters_basestack);
 
     k_thread_create(&context->poll485_thread, context->poll485_stack, context->poll485_stack_size,
-                    meters_poll_bus485_Thread, context, NULL, NULL,
+                    meters_poll_bus485_thread, context, NULL, NULL,
                     CONFIG_STRIM_METERS_INIT_PRIORITY, 0, K_NO_WAIT);
     
     k_thread_name_set(&context->poll485_thread, "meters_bus485");
