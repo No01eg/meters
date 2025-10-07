@@ -271,8 +271,8 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
                       energy_kWh_integer, energy_kWh_fractional, power);
   }
   else{
-    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "Energy      : %u.%03u kWh\n", energy_kWh_integer, energy_kWh_fractional);
-    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "Power       : %u W\n", power);
+    shell_print(shell, "Energy      : %u.%03u kWh", energy_kWh_integer, energy_kWh_fractional);
+    shell_print(shell, "Power       : %u W", power);
   }
       
   if (values->type == meters_current_type_dc){
@@ -282,8 +282,8 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
                                                 (double)values->DC.current);
     }              
     else{
-      shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "voltage     : %ld V\n", lroundf(values->DC.voltage));
-      shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "current     : %.2lf A\n", (double)values->DC.current);
+      shell_print(shell, "voltage     : %ld V", lroundf(values->DC.voltage));
+      shell_print(shell, "current     : %.2lf A", (double)values->DC.current);
     }                      
   }
   else{
@@ -299,10 +299,10 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
       shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " %11s | %14s", voltage, current);
     }
     else{
-      shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "voltage     : %3ld/%3ld/%3ld V\n", 
-                    lroundf(values->AC.voltage[0]), lroundf(values->AC.voltage[1]), lroundf(values->AC.voltage[2]));
-      shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "current     : %3.1lf/%3.1lf/%3.1lf A\n", 
-                    (double)values->AC.current[0], (double)values->AC.current[1], (double)values->AC.current[2]);
+      shell_print(shell, "voltage     : %3ld/%3ld/%3ld V", lroundf(values->AC.voltage[0]), 
+                          lroundf(values->AC.voltage[1]), lroundf(values->AC.voltage[2]));
+      shell_print(shell, "current     : %3.1lf/%3.1lf/%3.1lf A", (double)values->AC.current[0], 
+                        (double)values->AC.current[1], (double)values->AC.current[2]);
     }
   }
 }
@@ -340,18 +340,20 @@ static int32_t meters_view_single_cmd(const struct shell * shell,
 
   shell_print(shell, "parameter   : value");
   shell_print(shell, "------------:--------------");
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "type        : %s\n", meters_get_typename(item->parameters.type));
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "address     : %s\n", addr_str);
+  shell_print(shell, "type        : %s", meters_get_typename(item->parameters.type));
+  shell_print(shell, "address     : %s", addr_str);
   if(item->parameters.baudrate == 0){
-    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "baudrate    : %s\n", "----");
+    shell_print(shell, "baudrate    : %s", "----");
   }
   else{
-    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "baudrate    : %d\n", item->parameters.baudrate);
+    shell_print(shell, "baudrate    : %d", item->parameters.baudrate);
   }
+
   uint32_t time = k_uptime_get_32();
   time -= item->timemark;
   time /= 100;
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "success req : %d.%d seconds ago\n", time/10, time%10);
+  shell_print(shell, "success req : %d.%d seconds ago", time/10, time%10);
+  
   if(item->is_valid)
     shell_values(shell, &item->values, false);
 
