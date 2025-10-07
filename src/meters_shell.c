@@ -208,7 +208,7 @@ static int32_t meters_view_cmd(const struct shell * shell,
 
   int32_t ret = meters_get_all(&data);
   if(ret < 0){
-    shell_warn(shell, "collect data error: %d\r\n", ret);
+    shell_warn(shell, "collect data error: %d\n", ret);
     return 0;
   }
 
@@ -271,8 +271,8 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
                       energy_kWh_integer, energy_kWh_fractional, power);
   }
   else{
-    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "Energy      : %u.%03u kWh\r\n", energy_kWh_integer, energy_kWh_fractional);
-    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "Power       : %u W\r\n", power);
+    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "Energy      : %u.%03u kWh\n", energy_kWh_integer, energy_kWh_fractional);
+    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "Power       : %u W\n", power);
   }
       
   if (values->type == meters_current_type_dc){
@@ -282,8 +282,8 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
                                                 (double)values->DC.current);
     }              
     else{
-      shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "voltage     : %ld V\r\n", lroundf(values->DC.voltage));
-      shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "current     : %.2lf A\r\n", (double)values->DC.current);
+      shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "voltage     : %ld V\n", lroundf(values->DC.voltage));
+      shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "current     : %.2lf A\n", (double)values->DC.current);
     }                      
   }
   else{
@@ -299,9 +299,9 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
       shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, " %11s | %14s", voltage, current);
     }
     else{
-      shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "voltage     : %3ld/%3ld/%3ld V\r\n", 
+      shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "voltage     : %3ld/%3ld/%3ld V\n", 
                     lroundf(values->AC.voltage[0]), lroundf(values->AC.voltage[1]), lroundf(values->AC.voltage[2]));
-      shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "current     : %3.1lf/%3.1lf/%3.1lf A\r\n", 
+      shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "current     : %3.1lf/%3.1lf/%3.1lf A\n", 
                     (double)values->AC.current[0], (double)values->AC.current[1], (double)values->AC.current[2]);
     }
   }
@@ -316,7 +316,7 @@ static int32_t meters_reinit_cmd(const struct shell * shell,
 static int32_t meters_view_single_cmd(const struct shell * shell,
                               size_t argc, uint8_t **argv){
   if(argc != 2){
-    shell_warn(shell, "arguments error: correct cmd - meters get <index>\r\n");
+    shell_warn(shell, "arguments error: correct cmd - meters get <index>\n");
     return 0;
   }
   meters_values_collection_t data;
@@ -324,12 +324,12 @@ static int32_t meters_view_single_cmd(const struct shell * shell,
   
   int32_t ret = meters_get_all(&data);
   if(ret < 0){
-    shell_warn(shell, "collect data error: %d\r\n", ret);
+    shell_warn(shell, "collect data error: %d\n", ret);
     return 0;
   }
   
   if(index > data.count){
-    shell_warn(shell, "wrong index\r\n");
+    shell_warn(shell, "wrong index\n");
     return 0;
   }
 
@@ -340,18 +340,18 @@ static int32_t meters_view_single_cmd(const struct shell * shell,
 
   shell_print(shell, "parameter   : value");
   shell_print(shell, "------------:--------------");
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "type        : %s\r\n", meters_get_typename(item->parameters.type));
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "address     : %s\r\n", addr_str);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "type        : %s\n", meters_get_typename(item->parameters.type));
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "address     : %s\n", addr_str);
   if(item->parameters.baudrate == 0){
-    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "baudrate    : %s\r\n", "----");
+    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "baudrate    : %s\n", "----");
   }
   else{
-    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "baudrate    : %d\r\n", item->parameters.baudrate);
+    shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "baudrate    : %d\n", item->parameters.baudrate);
   }
   uint32_t time = k_uptime_get_32();
   time -= item->timemark;
   time /= 100;
-  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "success req : %d.%d seconds ago\r\n", time/10, time%10);
+  shell_fprintf(shell, SHELL_VT100_COLOR_DEFAULT, "success req : %d.%d seconds ago\n", time/10, time%10);
   if(item->is_valid)
     shell_values(shell, &item->values, false);
 

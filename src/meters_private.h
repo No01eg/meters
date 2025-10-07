@@ -59,8 +59,6 @@ typedef struct{
     struct k_thread poll485_thread;
     k_thread_stack_t *poll485_stack;
     size_t poll485_stack_size;
-
-    //void * user_data;
 }meters_context_t;
 
 extern meters_context_t meters_context;
