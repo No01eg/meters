@@ -28,6 +28,7 @@ static void meters_poll_bus485_thread(void *args0, void *args1, void *args2){
     }
 
     exit_poll485_thread:
+    LOG_ERR("thread %s stopped", k_thread_name_get(k_current_get()));
 }
 
 void meters_poll485_thread_run(meters_context_t *context){
