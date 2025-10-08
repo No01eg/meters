@@ -1,6 +1,7 @@
 if(CONFIG_STRIM_METERS)
     list(APPEND ZEPHYR_EXTRA_MODULES "${CMAKE_SOURCE_DIR}/../Bus485")
-
+    
+    zephyr_syscall_header(src/meters.h)
     zephyr_include_directories(src src/meter485)
     
     zephyr_library()

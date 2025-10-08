@@ -1,6 +1,7 @@
 menuconfig STRIM_METERS
     bool "Enable energy meters polling by RS485"
     default n
+    depends on APPLICATION_DEFINED_SYSCALL
 
 if STRIM_METERS
     module = STRIM_METERS

@@ -1,5 +1,6 @@
-#include "meters_private.h"
 #include <stdbool.h>
+#include <zephyr/internal/syscall_handler.h>
+#include "meters_private.h"
 #include "bus485.h"
 
 #include "meters_spm90.h"
@@ -114,8 +115,7 @@ static int32_t meters_initialize_context(meters_context_t *context,
     return 0;
 }
 
-
-int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
+int32_t z_impl_meters_set_values(uint32_t idx, const meters_values_t *buffer){
     meters_context_t *context = &meters_context;
 
     if(buffer == NULL)
@@ -136,6 +136,24 @@ int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer){
     k_mutex_unlock(&context->data_access_mutex);
     return 0;
 }
+
+#if CONFIG_USERSPACE
+static int32_t z_vrfy_meters_set_values(uint32_t idx, const meters_values_t *buffer)
+{
+    meters_values_t copy_values;
+    int32_t ret;
+
+    if(k_usermode_from_copy(&copy_values, buffer, sizeof(*buffer)) != 0){
+        return -EPERM;
+    }
+
+    ret = z_impl_meters_set_values(idx, &copy_values);
+
+    return ret;
+}
+
+#include <zephyr/syscalls/meters_set_values_mrsh.c>
+#endif
 
 int32_t meters_get_values(uint32_t idx, meters_values_t *buffer){
     meters_context_t *context = &meters_context;
