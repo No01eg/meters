@@ -140,14 +140,9 @@ int32_t z_impl_meters_set_values(uint32_t idx, const meters_values_t *buffer){
 #if CONFIG_USERSPACE
 static int32_t z_vrfy_meters_set_values(uint32_t idx, const meters_values_t *buffer)
 {
-    meters_values_t copy_values;
     int32_t ret;
-
-    if(k_usermode_from_copy(&copy_values, buffer, sizeof(*buffer)) != 0){
-        return -EPERM;
-    }
-
-    ret = z_impl_meters_set_values(idx, &copy_values);
+    K_OOPS(K_SYSCALL_MEMORY_WRITE(buffer, sizeof(*buffer)));
+    ret = z_impl_meters_set_values(idx, buffer);
 
     return ret;
 }
@@ -155,7 +150,7 @@ static int32_t z_vrfy_meters_set_values(uint32_t idx, const meters_values_t *buf
 #include <zephyr/syscalls/meters_set_values_mrsh.c>
 #endif
 
-int32_t meters_get_values(uint32_t idx, meters_values_t *buffer){
+int32_t z_impl_meters_get_values(uint32_t idx, meters_values_t *buffer){
     meters_context_t *context = &meters_context;
     meters_item_t *item = &context->items[idx];
     
@@ -182,6 +177,29 @@ int32_t meters_get_values(uint32_t idx, meters_values_t *buffer){
     return ret;
 }
 
+#if CONFIG_USERSPACE
+static int32_t z_vrfy_meters_get_values(uint32_t idx, meters_values_t *buffer)
+{
+    meters_values_t copy_values;
+    int32_t ret;
+
+    if(k_usermode_from_copy(&copy_values, buffer, sizeof(*buffer)) != 0){
+        return -EPERM;
+    }
+    
+
+    ret = z_impl_meters_get_values(idx, &copy_values);
+
+    if(k_usermode_to_copy(buffer, &copy_values, sizeof(*buffer)) != 0){
+        return -EPERM;
+    }
+
+    return ret;
+}
+
+#include <zephyr/syscalls/meters_get_values_mrsh.c>
+#endif
+
 const uint8_t * meters_get_typename(meters_type_t type){
     if(type < meters_type_lastIndex)
         return meters_description_type[type].name;
@@ -189,7 +207,7 @@ const uint8_t * meters_get_typename(meters_type_t type){
     return "unknown";
 }
 
-int32_t meters_get_all(meters_values_collection_t *buffer){
+int32_t z_impl_meters_get_all(meters_values_collection_t *buffer){
     meters_context_t *context = &meters_context;
 
     if(buffer == NULL)
@@ -218,6 +236,28 @@ int32_t meters_get_all(meters_values_collection_t *buffer){
 
     return 0;
 }
+
+#if CONFIG_USERSPACE
+static int32_t z_vrfy_meters_get_all(meters_values_collection_t *buffer)
+{
+    meters_values_collection_t copy_values;
+    int32_t ret;
+
+    if(k_usermode_from_copy(&copy_values, buffer, sizeof(*buffer)) != 0){
+        return -EPERM;
+    }
+
+    ret = z_impl_meters_get_all(&copy_values);
+
+    if(k_usermode_to_copy(buffer, &copy_values, sizeof(*buffer)) != 0){
+        return -EPERM;
+    }
+
+    return ret;
+}
+
+#include <zephyr/syscalls/meters_get_all_mrsh.c>
+#endif
 
 //TODO реализовать остановку всех подчиненных потоков, заблокировать чтение мьютексом 
 // при задании новых параметров
@@ -252,6 +292,9 @@ int32_t meters_init(meter_parameters_t *parameters, uint8_t count){
 
     meters_poll485_thread_run(context);
 #endif
+
+    return 0;
+}
 
     return 0;
 }

@@ -64,8 +64,8 @@ typedef struct{
 int32_t meters_init(meter_parameters_t *parameters, uint8_t count);
 int32_t meters_reinit(void);
 __syscall int32_t meters_set_values(uint32_t idx, const meters_values_t *buffer);
-int32_t meters_get_values(uint32_t idx, meters_values_t *buffer);
-int32_t meters_get_all(meters_values_collection_t *buffer);
+__syscall int32_t meters_get_values(uint32_t idx, meters_values_t *buffer);
+__syscall int32_t meters_get_all(meters_values_collection_t *buffer);
 const uint8_t * meters_get_typename(meters_type_t type);
 
 #include <zephyr/syscalls/meters.h>
