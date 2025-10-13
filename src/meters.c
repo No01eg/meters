@@ -303,7 +303,6 @@ int32_t meters_init(meter_parameters_t *parameters, uint8_t count){
 
 #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
     tool->bus485 = DEVICE_DT_GET_OR_NULL(DT_CHOSEN(strim_meter_bus485));
-    tool->log = DEVICE_DT_GET_OR_NULL(DT_CHOSEN(zephyr_shell_uart));
     if(tool->bus485 == NULL){
         LOG_ERR("bus485 init error nullpoint");
         return -ENXIO;
@@ -314,7 +313,6 @@ int32_t meters_init(meter_parameters_t *parameters, uint8_t count){
 
     k_object_access_grant(&tool->data_access_mutex, &tool->poll485_thread);
     k_object_access_grant(tool->bus485, &tool->poll485_thread);
-    k_object_access_grant(tool->log, &tools_context.poll485_thread);
     k_mem_domain_add_thread(&app0_domain, thread_id);
 #endif
 

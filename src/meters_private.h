@@ -51,7 +51,6 @@ typedef struct{
 #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
     const struct device *bus485;
 #endif
-    const struct device *log;
     struct k_mutex data_access_mutex;
     struct k_sem reinitSem;
     struct k_thread poll485_thread;
