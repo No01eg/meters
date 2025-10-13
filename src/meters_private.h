@@ -51,14 +51,19 @@ typedef struct{
 #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
     const struct device *bus485;
 #endif
-    meters_item_t items[CONFIG_STRIM_METERS_ITEMS_MAX_COUNT];
-    meter_parameters_t parameters[CONFIG_STRIM_METERS_ITEMS_MAX_COUNT];
-    uint32_t item_count;
+    const struct device *log;
     struct k_mutex data_access_mutex;
     struct k_sem reinitSem;
     struct k_thread poll485_thread;
     k_thread_stack_t *poll485_stack;
     size_t poll485_stack_size;
+}meters_tools_context_t;
+
+typedef struct{
+    meters_item_t items[CONFIG_STRIM_METERS_ITEMS_MAX_COUNT];
+    meter_parameters_t parameters[CONFIG_STRIM_METERS_ITEMS_MAX_COUNT];
+    uint32_t item_count;
+    meters_tools_context_t *tools;
 }meters_context_t;
 
 extern meters_context_t meters_context;

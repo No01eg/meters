@@ -217,6 +217,7 @@ static int32_t meters_ce318_send_packet(meters_context_t * context,
                                 uint32_t baudrate, uint32_t address, 
                                 const uint8_t * data, uint32_t length)
 {
+    meters_tools_context_t *tool = context->tools;
     if((data == NULL) || (length == 0))
         return -1;
     
@@ -242,18 +243,18 @@ static int32_t meters_ce318_send_packet(meters_context_t * context,
     pack[count] = SMP_END;
     count++;
 
-    bus485_lock(context->bus485);
-    ret = bus485_set_baudrate(context->bus485, baudrate);
+    bus485_lock(tool->bus485);
+    ret = bus485_set_baudrate(tool->bus485, baudrate);
     if(ret < 0){
-        bus485_release(context->bus485);
+        bus485_release(tool->bus485);
         LOG_ERR("set baudrate error: %d", ret);
         return ret;
     }
 
-    bus485_flush(context->bus485);
-    ret = bus485_send(context->bus485, pack, count);
+    bus485_flush(tool->bus485);
+    ret = bus485_send(tool->bus485, pack, count);
     if(ret < 0){
-        bus485_release(context->bus485);
+        bus485_release(tool->bus485);
         LOG_ERR("ce318 send error: %d", ret);
         return ret;
     }
@@ -262,11 +263,12 @@ static int32_t meters_ce318_send_packet(meters_context_t * context,
 
 static int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * data, uint32_t length)
 {   
+    meters_tools_context_t *tool = context->tools;
     int32_t ret;
     uint8_t resp[256];
     uint8_t size = 0;   
                                            
-    ret = bus485_recv(context->bus485, resp, ARRAY_SIZE(resp), CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
+    ret = bus485_recv(tool->bus485, resp, ARRAY_SIZE(resp), CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
     if(ret < 0){
         return ret;
     }
@@ -276,7 +278,7 @@ static int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * d
     //Пока под вопросом нужна ли дополнительное доскачивание, если он за раз всегда вычитывает
     if(resp[ret-1] != SMP_END){
         
-        ret = bus485_recv(context->bus485, resp + ret, ARRAY_SIZE(resp) - ret, CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
+        ret = bus485_recv(tool->bus485, resp + ret, ARRAY_SIZE(resp) - ret, CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
         if(ret < 0){
             return ret;
         }
@@ -312,6 +314,7 @@ static int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * d
 static int32_t meters_ce318_poll(meters_context_t *context, ce318_poll_data_t *poll_data, 
                         int64_t *values, uint32_t values_count)
 {
+    meters_tools_context_t *tool = context->tools;
     int32_t ret;
 
     ret = meters_ce318_send_packet(context, poll_data->baudrate, poll_data->address,
@@ -323,10 +326,10 @@ static int32_t meters_ce318_poll(meters_context_t *context, ce318_poll_data_t *p
     uint8_t response[256];
     ret = meters_ce318_get_response(context, response, sizeof(response));
     if(ret < 0){
-            bus485_release(context->bus485);
+            bus485_release(tool->bus485);
         return ret;
     }
-    bus485_release(context->bus485);
+    bus485_release(tool->bus485);
 
     int32_t offset = 0;
 
@@ -339,6 +342,7 @@ static int32_t meters_ce318_poll(meters_context_t *context, ce318_poll_data_t *p
 int32_t meters_ce318_get_battery(meters_context_t *context, uint32_t baudrate,
                                 uint32_t address, uint8_t *hex)
 {
+    meters_tools_context_t *tool = context->tools;
     uint8_t query[] = {smp_command_get_data_single, SMP_NO_DFF, smp_data_single_battery};
     
     uint8_t data[8];
@@ -354,10 +358,10 @@ int32_t meters_ce318_get_battery(meters_context_t *context, uint32_t baudrate,
 
     ret = meters_ce318_get_response(context, data, sizeof(data));
     if(ret < 0){
-            bus485_release(context->bus485);
+            bus485_release(tool->bus485);
         return ret;
     }
-    bus485_release(context->bus485);
+    bus485_release(tool->bus485);
     
     memcpy(hex, data, ret);
     return ret;
@@ -479,6 +483,7 @@ int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
 {
     int32_t ret;
     meters_item_t * item = &context->items[item_idx];
+    meters_tools_context_t *tool = context->tools;
     meter_parameters_t *param = &context->parameters[item_idx];
     meters_values_ac_t * shadow = &item->data.ce318.shadow;
 
@@ -516,11 +521,11 @@ int32_t meters_ce318_read(meters_context_t * context, uint32_t item_idx)
     }
     else {
         if(item->is_valid_values && (++item->bad_responce_count > CE318_ERROR_THRESHOLD)){
-            k_mutex_lock(&context->data_access_mutex, K_FOREVER);
+            k_mutex_lock(&tool->data_access_mutex, K_FOREVER);
             {
                 item->is_valid_values = false;
             }
-            k_mutex_unlock(&context->data_access_mutex);
+            k_mutex_unlock(&tool->data_access_mutex);
         }
 
         if(item->is_valid_values){

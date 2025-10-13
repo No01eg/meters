@@ -1,5 +1,9 @@
 #include <stdbool.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/internal/syscall_handler.h>
+#include <zephyr/app_memory/app_memdomain.h>
 #include "meters_private.h"
 #include "bus485.h"
 
@@ -10,8 +14,16 @@
 
 LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
+struct k_mem_domain app0_domain;    
+K_APPMEM_PARTITION_DEFINE(app_part0);
+K_APP_BMEM(app_part0) meters_tools_context_t __aligned(32) tools_context;
+K_APP_DMEM(app_part0) meters_context_t __aligned(32) meters_context;
 
-meters_context_t meters_context;
+
+struct k_mem_partition *app0_parts[] = {
+    &app_part0,
+    &k_log_partition
+};                       
 
 typedef struct {
     const char* name;
@@ -117,7 +129,7 @@ static int32_t meters_initialize_context(meters_context_t *context,
 
 int32_t z_impl_meters_set_values(uint32_t idx, const meters_values_t *buffer){
     meters_context_t *context = &meters_context;
-
+    meters_tools_context_t *tool = context->tools;
     if(buffer == NULL)
         return -EINVAL;
     
@@ -127,13 +139,13 @@ int32_t z_impl_meters_set_values(uint32_t idx, const meters_values_t *buffer){
     if(buffer->type != meters_description_type[context->parameters[idx].type].values_type)
         return -EINVAL; 
     
-    k_mutex_lock(&context->data_access_mutex, K_FOREVER);
+    k_mutex_lock(&tool->data_access_mutex, K_FOREVER);
     {
         memcpy(&context->items[idx].values, buffer, sizeof(meters_values_t));
         context->items[idx].timemark = k_uptime_get_32();
         context->items[idx].is_valid_values = true;
     }
-    k_mutex_unlock(&context->data_access_mutex);
+    k_mutex_unlock(&tool->data_access_mutex);
     return 0;
 }
 
@@ -153,6 +165,7 @@ static int32_t z_vrfy_meters_set_values(uint32_t idx, const meters_values_t *buf
 int32_t z_impl_meters_get_values(uint32_t idx, meters_values_t *buffer){
     meters_context_t *context = &meters_context;
     meters_item_t *item = &context->items[idx];
+    meters_tools_context_t *tool = context->tools;
     
     if(buffer == NULL)
         return -EINVAL;
@@ -162,7 +175,7 @@ int32_t z_impl_meters_get_values(uint32_t idx, meters_values_t *buffer){
 
     int32_t ret = -ENXIO;
 
-    k_mutex_lock(&context->data_access_mutex, K_FOREVER);
+    k_mutex_lock(&tool->data_access_mutex, K_FOREVER);
     {
         uint32_t curTimemark = k_uptime_get_32();
         if((curTimemark - item->timemark) > (CONFIG_STRIM_METERS_VALID_DATA_TIMEOUT))
@@ -172,7 +185,7 @@ int32_t z_impl_meters_get_values(uint32_t idx, meters_values_t *buffer){
             ret = 0;
         }
     }
-    k_mutex_unlock(&context->data_access_mutex);
+    k_mutex_unlock(&tool->data_access_mutex);
 
     return ret;
 }
@@ -209,12 +222,13 @@ const uint8_t * meters_get_typename(meters_type_t type){
 
 int32_t z_impl_meters_get_all(meters_values_collection_t *buffer){
     meters_context_t *context = &meters_context;
+    meters_tools_context_t *tool = context->tools;
 
     if(buffer == NULL)
         return -EINVAL;
     buffer->count = 0;
 
-    k_mutex_lock(&context->data_access_mutex, K_FOREVER);
+    k_mutex_lock(&tool->data_access_mutex, K_FOREVER);
     {
         for(uint32_t i = 0; i < context->item_count; i++){
             if((i < ARRAY_SIZE(context->items)) &&
@@ -232,7 +246,7 @@ int32_t z_impl_meters_get_all(meters_values_collection_t *buffer){
             }
         }
     }
-    k_mutex_unlock(&context->data_access_mutex);
+    k_mutex_unlock(&tool->data_access_mutex);
 
     return 0;
 }
@@ -273,28 +287,36 @@ int32_t meters_init(meter_parameters_t *parameters, uint8_t count){
     meters_context_t * context = &meters_context;
     int32_t ret;
     
+    context->tools = &tools_context;
+    meters_tools_context_t *tool = context->tools;
+    
     if(parameters == NULL)
         return -EINVAL;
 
-    k_mutex_init(&context->data_access_mutex);
-    k_sem_init(&context->reinitSem, 0 ,1);
+    k_mutex_init(&tool->data_access_mutex);
+    k_sem_init(&tool->reinitSem, 0 ,1);
 
     meters_initialize_context(context, parameters, count);
     
     (void)ret;
+    k_mem_domain_init(&app0_domain, ARRAY_SIZE(app0_parts), app0_parts);
 
 #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
-    context->bus485 = DEVICE_DT_GET_OR_NULL(DT_CHOSEN(strim_meter_bus485));
-    if(context->bus485 == NULL){
+    tool->bus485 = DEVICE_DT_GET_OR_NULL(DT_CHOSEN(strim_meter_bus485));
+    tool->log = DEVICE_DT_GET_OR_NULL(DT_CHOSEN(zephyr_shell_uart));
+    if(tool->bus485 == NULL){
         LOG_ERR("bus485 init error nullpoint");
         return -ENXIO;
     }
 
-    meters_poll485_thread_run(context);
-#endif
 
-    return 0;
-}
+    k_tid_t thread_id = meters_poll485_thread_run(context);
+
+    k_object_access_grant(&tool->data_access_mutex, &tool->poll485_thread);
+    k_object_access_grant(tool->bus485, &tool->poll485_thread);
+    k_object_access_grant(tool->log, &tools_context.poll485_thread);
+    k_mem_domain_add_thread(&app0_domain, thread_id);
+#endif
 
     return 0;
 }

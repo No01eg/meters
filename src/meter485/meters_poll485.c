@@ -31,14 +31,16 @@ static void meters_poll_bus485_thread(void *args0, void *args1, void *args2){
     LOG_ERR("thread %s stopped", k_thread_name_get(k_current_get()));
 }
 
-void meters_poll485_thread_run(meters_context_t *context){
+k_tid_t meters_poll485_thread_run(meters_context_t *context){
 
-    context->poll485_stack = meters_basestack;
-    context->poll485_stack_size = K_THREAD_STACK_SIZEOF(meters_basestack);
+    k_tid_t ret;
+    context->tools->poll485_stack = meters_basestack;
+    context->tools->poll485_stack_size = K_THREAD_STACK_SIZEOF(meters_basestack);
 
-    k_thread_create(&context->poll485_thread, context->poll485_stack, context->poll485_stack_size,
+    ret = k_thread_create(&context->tools->poll485_thread, context->tools->poll485_stack, context->tools->poll485_stack_size,
                     meters_poll_bus485_thread, context, NULL, NULL,
-                    CONFIG_STRIM_METERS_INIT_PRIORITY, 0, K_NO_WAIT);
+                    CONFIG_STRIM_METERS_INIT_PRIORITY, K_USER, K_NO_WAIT);
     
-    k_thread_name_set(&context->poll485_thread, "meters_bus485");
+    k_thread_name_set(&context->tools->poll485_thread, "meters_bus485");
+    return ret;
 }

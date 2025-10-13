@@ -9,6 +9,7 @@ enum {SPM90_ERROR_THRESHOLD = 3};
 static int32_t meters_spm90_get_responce(meters_context_t * context, uint8_t id, 
                                     uint16_t * buf, uint16_t count)
 {
+    meters_tools_context_t *tool = context->tools;
     int32_t ret;
     uint8_t resp[17];
     enum {MODBUS_WRAP_SIZE = 5};    
@@ -17,7 +18,7 @@ static int32_t meters_spm90_get_responce(meters_context_t * context, uint8_t id,
     if(expected > sizeof(resp))
         return -E2BIG;
                                         
-    ret = bus485_recv(context->bus485, resp, ARRAY_SIZE(resp), CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
+    ret = bus485_recv(tool->bus485, resp, ARRAY_SIZE(resp), CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
     if(ret < 0)
         return ret;
 
@@ -45,6 +46,7 @@ static int32_t meters_spm90_get_responce(meters_context_t * context, uint8_t id,
 int32_t meters_spm90_get_values(meters_context_t * context, uint16_t id, 
                                 uint16_t baudrate, meters_values_dc_t *shadow, uint32_t is_wait_before_send)
 {
+    meters_tools_context_t *tool = context->tools;
     int32_t ret;
     uint8_t req[8] = {id, 0x03, 0x00, 0x00, 0x00, 0x06};
     uint16_t registers[6] = {0};
@@ -52,24 +54,24 @@ int32_t meters_spm90_get_values(meters_context_t * context, uint16_t id,
     req[6] = crc & 0xff;
     req[7] = (crc >> 8) & 0xff;
     
-    bus485_lock(context->bus485);
+    bus485_lock(tool->bus485);
     
-    ret = bus485_set_baudrate(context->bus485, baudrate);
+    ret = bus485_set_baudrate(tool->bus485, baudrate);
     if(ret < 0){
         LOG_ERR("set baudrate error: %d", ret);
-        bus485_release(context->bus485);
+        bus485_release(tool->bus485);
         return ret;
     }
 
-    bus485_flush(context->bus485);
+    bus485_flush(tool->bus485);
     
     if(is_wait_before_send)
         k_sleep(K_MSEC(CONFIG_STRIM_SPM90_SILENSE_BEFORE_REQUEST));
 
-    ret = bus485_send(context->bus485, req, 8);
+    ret = bus485_send(tool->bus485, req, 8);
     if(ret < 0){
         LOG_ERR("send spm90 query error: %d", ret);
-        bus485_release(context->bus485);
+        bus485_release(tool->bus485);
         return ret;
     }
 
@@ -83,7 +85,7 @@ int32_t meters_spm90_get_values(meters_context_t * context, uint16_t id,
         uint32_t energy_10Wh = (registers[4] << 16) | registers[5];
         shadow->energy = (uint64_t)energy_10Wh * 10 * 3600;
     }
-    bus485_release(context->bus485);
+    bus485_release(tool->bus485);
     return ret;
 }
 
@@ -95,6 +97,7 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
     meters_item_t * item = &context->items[item_idx];
     meter_parameters_t *param = &context->parameters[item_idx];
     meters_values_dc_t * shadow = &item->data.spm90.shadow;
+    meters_tools_context_t *tool = context->tools;
 
     uint32_t is_wait_before_send = 0;
     
@@ -119,11 +122,11 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
             if(item->is_valid_values)
                 LOG_DBG("spm90 exclude of poll next %d ms", CONFIG_STRIM_SPM90_WAIT_AFTER_ERROR);
             
-            k_mutex_lock(&context->data_access_mutex, K_FOREVER);
+            k_mutex_lock(&tool->data_access_mutex, K_FOREVER);
             {
                 item->is_valid_values = false;
             }
-            k_mutex_unlock(&context->data_access_mutex);
+            k_mutex_unlock(&tool->data_access_mutex);
             item->error_timemark = k_uptime_get_32();
 
         }

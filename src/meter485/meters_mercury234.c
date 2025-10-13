@@ -1,6 +1,8 @@
 #include "meters_private.h"
 #include "bus485.h"
 #include <zephyr/sys/crc.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <string.h>
 
 enum{MERCURY_ERROR_THRESHOLD = 3};
@@ -11,6 +13,7 @@ LOG_MODULE_DECLARE(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 static int32_t meters_mercury_send(meters_context_t *context, uint8_t address, uint32_t baudrate,
                             const uint8_t *data, size_t length)
 {
+    meters_tools_context_t *tool = context->tools;
     int32_t ret;
     uint8_t query[24] = {address};
     size_t count = length + 1;
@@ -24,19 +27,19 @@ static int32_t meters_mercury_send(meters_context_t *context, uint8_t address, u
 
     count += 2;
 
-    bus485_lock(context->bus485);
+    bus485_lock(tool->bus485);
     
-    ret = bus485_set_baudrate(context->bus485, baudrate);
+    ret = bus485_set_baudrate(tool->bus485, baudrate);
     if(ret < 0){
-        bus485_release(context->bus485);
+        bus485_release(tool->bus485);
         return ret;
     }
 
-    bus485_flush(context->bus485);
+    bus485_flush(tool->bus485);
 
-    ret = bus485_send(context->bus485, query, count);
+    ret = bus485_send(tool->bus485, query, count);
     if(ret < 0){
-        bus485_release(context->bus485);
+        bus485_release(tool->bus485);
         return ret;
     }
 
@@ -46,13 +49,14 @@ static int32_t meters_mercury_send(meters_context_t *context, uint8_t address, u
 static int32_t meters_mercury_receive(meters_context_t *context, uint8_t address, uint8_t *data, uint32_t length){
     int32_t ret;
     uint8_t resp[32];
+    meters_tools_context_t *tool = context->tools;
 
-    ret = bus485_recv(context->bus485, resp, sizeof(resp), CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
+    ret = bus485_recv(tool->bus485, resp, sizeof(resp), CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
     if(ret < 0){
-        bus485_release(context->bus485);
+        bus485_release(tool->bus485);
         return ret;
     }
-    bus485_release(context->bus485);
+    bus485_release(tool->bus485);
 
     uint16_t crc = crc16_reflect(0xA001, 0xFFFF, resp, ret - sizeof(uint16_t));
     uint16_t crc1 = (((uint16_t)resp[ret-1]) << 8) | resp[ret-2];
@@ -264,6 +268,7 @@ int32_t meters_mercury_read(meters_context_t *context, uint32_t item_idx)
     meters_item_t *item = &context->items[item_idx];
     meter_parameters_t *param = &context->parameters[item_idx];
     meters_values_ac_t *shadow = &item->data.mercury.shadow;
+    meters_tools_context_t *tool = context->tools;
 
     ret = meters_mercury_ping(context, param->address, param->baudrate);
     if(ret < 0)
@@ -317,11 +322,11 @@ int32_t meters_mercury_read(meters_context_t *context, uint32_t item_idx)
     }
     else {
         if(item->is_valid_values && (++item->bad_responce_count > MERCURY_ERROR_THRESHOLD)){
-            k_mutex_lock(&context->data_access_mutex, K_FOREVER);
+            k_mutex_lock(&tool->data_access_mutex, K_FOREVER);
             {
                 item->is_valid_values = false;
             }
-            k_mutex_unlock(&context->data_access_mutex);
+            k_mutex_unlock(&tool->data_access_mutex);
         }
 
         if(item->is_valid_values){
