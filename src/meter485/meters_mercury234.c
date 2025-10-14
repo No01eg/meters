@@ -331,6 +331,7 @@ int32_t meters_mercury_read(meters_context_t *context, uint32_t item_idx)
         meters_set_values(item_idx, &data);
     }
     else {
+
         if(item->is_valid_values && (++item->bad_responce_count > MERCURY_ERROR_THRESHOLD)){
             k_mutex_lock(&tool->data_access_mutex, K_FOREVER);
             {
@@ -339,17 +340,21 @@ int32_t meters_mercury_read(meters_context_t *context, uint32_t item_idx)
             k_mutex_unlock(&tool->data_access_mutex);
         }
 
-        if(item->is_valid_values){
-            if((ret != -ETIMEDOUT) && (ret != -EILSEQ) && (ret != -EBADMSG) &&
-            (ret != -EADDRNOTAVAIL) && (ret != -ENODATA) && (ret != -EMSGSIZE))
-                LOG_ERR("read mercury %d error: %d", param->address, ret);
-            else {
+        if(ret == -ETIMEDOUT){ //пропала связь во время сессии
+            k_sleep(K_MSEC(500));
+            meters_mercury_disconnect(context, param->address, param->baudrate);
+            k_sleep(K_MSEC(1000));
+            ret = 0;
+        }
+        else if((ret != -EFAULT) && (ret != -EINVAL))
+        {
+            if(item->is_valid_values){
                 LOG_DBG("mercury error: %d", ret);
-            }
+            ret = 0;
         }
 
     }
-    return 0;
+    return ret;
 }
 
 

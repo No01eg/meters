@@ -135,8 +135,10 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
         }
         if(item->is_valid_values){
             if((ret != -ETIMEDOUT) && (ret != -EILSEQ) && (ret != -EBADMSG) &&
-            (ret != -EADDRNOTAVAIL) && (ret != -ENODATA) && (ret != -EMSGSIZE))
+            (ret != -EADDRNOTAVAIL) && (ret != -ENODATA) && (ret != -EMSGSIZE)){
                 LOG_ERR("read spm90 %d error: %d", param->address, ret);
+                return ret; //unknown error
+            }
             else {
                 LOG_DBG("spm90 error: %d", ret);
             }
