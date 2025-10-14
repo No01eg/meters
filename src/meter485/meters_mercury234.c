@@ -317,6 +317,16 @@ int32_t meters_mercury_read(meters_context_t *context, uint32_t item_idx)
         if(!item->is_valid_values)
           LOG_INF("mercury poll recovered");
         item->bad_responce_count = 0;
+        
+        //Учет коэффициента трансформаторов тока
+        if(param->current_factor > 1){
+            for(uint32_t i = 0; i < 3; i++){
+                shadow->current[i] *= param->current_factor;
+            }
+            shadow->power_active *= param->current_factor;
+            shadow->energy_active *= param->current_factor;
+        }
+
         meters_values_t data = {.AC = *shadow, .type = meters_current_type_ac};
         meters_set_values(item_idx, &data);
     }
