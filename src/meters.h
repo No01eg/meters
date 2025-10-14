@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <zephyr/kernel.h>
 
 typedef enum {
     meters_type_extern_ac,

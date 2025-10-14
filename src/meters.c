@@ -2,7 +2,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/internal/syscall_handler.h>
 #include <zephyr/app_memory/app_memdomain.h>
 #include "meters_private.h"
 #include "bus485.h"
@@ -14,16 +13,20 @@
 
 LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
 
+#if CONFIG_USERSPACE
 struct k_mem_domain app0_domain;    
 K_APPMEM_PARTITION_DEFINE(app_part0);
 K_APP_BMEM(app_part0) meters_tools_context_t __aligned(32) tools_context;
 K_APP_DMEM(app_part0) meters_context_t __aligned(32) meters_context;
 
-
 struct k_mem_partition *app0_parts[] = {
     &app_part0,
     &k_log_partition
-};                       
+};
+#else                  
+meters_tools_context_t tools_context;
+meters_context_t meters_context;
+#endif     
 
 typedef struct {
     const char* name;
@@ -299,8 +302,9 @@ int32_t meters_init(meter_parameters_t *parameters, uint8_t count){
     meters_initialize_context(context, parameters, count);
     
     (void)ret;
+#if CONFIG_USERSPACE
     k_mem_domain_init(&app0_domain, ARRAY_SIZE(app0_parts), app0_parts);
-
+#endif
 #ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
     tool->bus485 = DEVICE_DT_GET_OR_NULL(DT_CHOSEN(strim_meter_bus485));
     if(tool->bus485 == NULL){
@@ -310,10 +314,11 @@ int32_t meters_init(meter_parameters_t *parameters, uint8_t count){
 
 
     k_tid_t thread_id = meters_poll485_thread_run(context);
-
+#if CONFIG_USERSPACE
     k_object_access_grant(&tool->data_access_mutex, &tool->poll485_thread);
     k_object_access_grant(tool->bus485, &tool->poll485_thread);
     k_mem_domain_add_thread(&app0_domain, thread_id);
+#endif
 #endif
 
     return 0;
