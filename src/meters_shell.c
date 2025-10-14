@@ -10,7 +10,7 @@
 static void get_meter_address(uint8_t * addr_str, uint32_t buffSize, meter_parameters_t *param);
 static void shell_values(const struct shell * shell, meters_values_t *values, bool horizontal);
 
-#if CONFIG_STRIM_METERS_BUS485_ENABLE
+#if CONFIG_STRIM_METERS2_BUS485_ENABLE
 
   typedef struct {
     const uint8_t *name;
@@ -197,7 +197,7 @@ static void shell_values(const struct shell * shell, meters_values_t *values, bo
 
     return 0;
   }
-#endif //CONFIG_STRIM_METERS_BUS485_ENABLE
+#endif //CONFIG_STRIM_METERS2_BUS485_ENABLE
 
 static int32_t meters_view_cmd(const struct shell * shell, 
                                  size_t argc, uint8_t ** argv)
@@ -397,7 +397,7 @@ static int32_t meters_testAC_cmd(const struct shell * shell,
 }
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_meters,
-  #if CONFIG_STRIM_METERS_BUS485_ENABLE
+  #if CONFIG_STRIM_METERS2_BUS485_ENABLE
     SHELL_CMD(ce318, &sub_ce318,  "Energomera CE318BY", NULL),
     SHELL_CMD(mercury, &sub_mercury, "Mercury protocol", NULL),
     SHELL_CMD_ARG(spm90, NULL,    "spm90 read",         spm90_read_cmd, 2, 1),

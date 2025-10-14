@@ -31,7 +31,7 @@ typedef struct {
 typedef union{
     meters_data_extern_ac_t extern_ac;
     meters_data_extern_dc_t extern_dc;
-#ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
+#ifdef CONFIG_STRIM_METERS2_BUS485_ENABLE
     meters_data_spm90_t spm90;
     meters_data_ce318_t ce318;
     meters_data_mercury_t mercury;
@@ -48,7 +48,7 @@ typedef struct{
 }meters_item_t;
 
 typedef struct{
-#ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
+#ifdef CONFIG_STRIM_METERS2_BUS485_ENABLE
     const struct device *bus485;
 #endif
     struct k_mutex data_access_mutex;
@@ -59,8 +59,8 @@ typedef struct{
 }meters_tools_context_t;
 
 typedef struct{
-    meters_item_t items[CONFIG_STRIM_METERS_ITEMS_MAX_COUNT];
-    meter_parameters_t parameters[CONFIG_STRIM_METERS_ITEMS_MAX_COUNT];
+    meters_item_t items[CONFIG_STRIM_METERS2_ITEMS_MAX_COUNT];
+    meter_parameters_t parameters[CONFIG_STRIM_METERS2_ITEMS_MAX_COUNT];
     uint32_t item_count;
     meters_tools_context_t *tools;
 }meters_context_t;

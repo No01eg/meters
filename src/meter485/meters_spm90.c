@@ -2,7 +2,7 @@
 #include "bus485.h"
 #include <zephyr/sys/crc.h>
 
-LOG_MODULE_DECLARE(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
+LOG_MODULE_DECLARE(meters2, CONFIG_STRIM_METERS2_LOG_LEVEL);
 
 enum {SPM90_ERROR_THRESHOLD = 3};
 
@@ -18,7 +18,7 @@ static int32_t meters_spm90_get_responce(meters_context_t * context, uint8_t id,
     if(expected > sizeof(resp))
         return -E2BIG;
                                         
-    ret = bus485_recv(tool->bus485, resp, ARRAY_SIZE(resp), CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
+    ret = bus485_recv(tool->bus485, resp, ARRAY_SIZE(resp), CONFIG_STRIM_METERS2_BUS485_RESPONSE_TIMEOUT);
     if(ret < 0)
         return ret;
 
@@ -66,7 +66,7 @@ int32_t meters_spm90_get_values(meters_context_t * context, uint16_t id,
     bus485_flush(tool->bus485);
     
     if(is_wait_before_send)
-        k_sleep(K_MSEC(CONFIG_STRIM_SPM90_SILENSE_BEFORE_REQUEST));
+        k_sleep(K_MSEC(CONFIG_STRIM_METERS2_SPM90_SILENSE_BEFORE_REQUEST));
 
     ret = bus485_send(tool->bus485, req, 8);
     if(ret < 0){
@@ -102,7 +102,7 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
     uint32_t is_wait_before_send = 0;
     
     if(!item->is_valid_values) {
-        if(k_uptime_get_32() - item->error_timemark < CONFIG_STRIM_SPM90_WAIT_AFTER_ERROR)
+        if(k_uptime_get_32() - item->error_timemark < CONFIG_STRIM_METERS2_SPM90_WAIT_AFTER_ERROR)
             return 0;//пропускаем опрос, пока не вышло время
         
         item->error_timemark = 0;
@@ -120,7 +120,7 @@ int32_t meters_spm90_read(meters_context_t * context, uint32_t item_idx)
     else {
         if(item->is_valid_values && (++item->bad_responce_count > SPM90_ERROR_THRESHOLD)){
             if(item->is_valid_values)
-                LOG_DBG("spm90 exclude of poll next %d ms", CONFIG_STRIM_SPM90_WAIT_AFTER_ERROR);
+                LOG_DBG("spm90 exclude of poll next %d ms", CONFIG_STRIM_METERS2_SPM90_WAIT_AFTER_ERROR);
             
             k_mutex_lock(&tool->data_access_mutex, K_FOREVER);
             {

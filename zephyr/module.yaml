@@ -1,4 +1,4 @@
-name: meters
+name: meters2
 build:
   cmake: .
   kconfig: Kconfig

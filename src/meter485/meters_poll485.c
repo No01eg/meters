@@ -1,8 +1,8 @@
 #include "meters_poll485.h"
 
-LOG_MODULE_DECLARE(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
+LOG_MODULE_DECLARE(meters2, CONFIG_STRIM_METERS2_LOG_LEVEL);
 
-static K_THREAD_STACK_DEFINE(meters_basestack, CONFIG_STRIM_METERS_MAIN_STACK_SIZE);
+static K_THREAD_STACK_DEFINE(meters_basestack, CONFIG_STRIM_METERS2_MAIN_STACK_SIZE);
 
 static void meters_poll_bus485_thread(void *args0, void *args1, void *args2){
     meters_context_t *context = (meters_context_t*)args0;
@@ -39,7 +39,7 @@ k_tid_t meters_poll485_thread_run(meters_context_t *context){
 
     ret = k_thread_create(&context->tools->poll485_thread, context->tools->poll485_stack, context->tools->poll485_stack_size,
                     meters_poll_bus485_thread, context, NULL, NULL,
-                    CONFIG_STRIM_METERS_INIT_PRIORITY, K_USER, K_NO_WAIT);
+                    CONFIG_STRIM_METERS2_INIT_PRIORITY, K_USER, K_NO_WAIT);
     
     k_thread_name_set(&context->tools->poll485_thread, "meters_bus485");
     return ret;

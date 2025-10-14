@@ -6,7 +6,7 @@
 typedef enum {
     meters_type_extern_ac,
     meters_type_extern_dc,
-#ifdef CONFIG_STRIM_METERS_BUS485_ENABLE
+#ifdef CONFIG_STRIM_METERS2_BUS485_ENABLE
     meters_type_CE318,
     meters_type_Mercury234,
     meters_type_SPM90,
@@ -58,7 +58,7 @@ typedef struct{
 }meter_item_info_t;
 
 typedef struct{
-    meter_item_info_t items[CONFIG_STRIM_METERS_ITEMS_MAX_COUNT];
+    meter_item_info_t items[CONFIG_STRIM_METERS2_ITEMS_MAX_COUNT];
     uint32_t count;
 }meters_values_collection_t;
 

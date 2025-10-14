@@ -11,7 +11,7 @@
 #include "meters_mercury234.h"
 #include "meters_poll485.h"
 
-LOG_MODULE_REGISTER(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
+LOG_MODULE_REGISTER(meters2, CONFIG_STRIM_METERS2_LOG_LEVEL);
 
 #if CONFIG_USERSPACE
 struct k_mem_domain app0_domain;    
@@ -44,7 +44,7 @@ static const meters_description_type_t meters_description_type[meters_type_lastI
                             .values_type = meters_current_type_ac,
                             .init = NULL,
                             .read = NULL},
-#if CONFIG_STRIM_METERS_BUS485_ENABLE
+#if CONFIG_STRIM_METERS2_BUS485_ENABLE
     [meters_type_SPM90]   = {.name = "SPM90",
                             .values_type = meters_current_type_dc,
                             .init = meters_spm90_init,
@@ -90,7 +90,7 @@ static int32_t meters_initialize_context(meters_context_t *context,
 {
     int32_t ret;
     //default properties
-    for(uint32_t i = 0; i < CONFIG_STRIM_METERS_ITEMS_MAX_COUNT; i++){
+    for(uint32_t i = 0; i < CONFIG_STRIM_METERS2_ITEMS_MAX_COUNT; i++){
         context->parameters[i].current_factor = 1;
         context->parameters[i].address = 0;
         context->parameters[i].type = meters_type_lastIndex;
@@ -100,7 +100,7 @@ static int32_t meters_initialize_context(meters_context_t *context,
         return -EINVAL;
     }
 
-	if(count > CONFIG_STRIM_METERS_ITEMS_MAX_COUNT)
+	if(count > CONFIG_STRIM_METERS2_ITEMS_MAX_COUNT)
 		return -E2BIG;
 
 	memcpy(context->parameters, params, count * sizeof(meter_parameters_t));
@@ -181,7 +181,7 @@ int32_t z_impl_meters_get_values(uint32_t idx, meters_values_t *buffer){
     k_mutex_lock(&tool->data_access_mutex, K_FOREVER);
     {
         uint32_t curTimemark = k_uptime_get_32();
-        if((curTimemark - item->timemark) > (CONFIG_STRIM_METERS_VALID_DATA_TIMEOUT))
+        if((curTimemark - item->timemark) > (CONFIG_STRIM_METERS2_VALID_DATA_TIMEOUT))
             item->is_valid_values = false;
         if(item->is_valid_values){
             memcpy(buffer, &item->values, sizeof(meters_values_t));
@@ -238,7 +238,7 @@ int32_t z_impl_meters_get_all(meters_values_collection_t *buffer){
                 (i < ARRAY_SIZE(context->parameters)) && 
                 (i < ARRAY_SIZE(buffer->items))){
                     uint32_t timemark = k_uptime_get_32();
-                    if((timemark - context->items[i].timemark) > (CONFIG_STRIM_METERS_VALID_DATA_TIMEOUT))
+                    if((timemark - context->items[i].timemark) > (CONFIG_STRIM_METERS2_VALID_DATA_TIMEOUT))
                         buffer->items[i].is_valid = context->items[i].is_valid_values = false;
                     else
                         buffer->items[i].is_valid = context->items[i].is_valid_values;
@@ -313,11 +313,13 @@ int32_t meters_init(meter_parameters_t *parameters, uint8_t count){
     }
 
 
-    k_tid_t thread_id = meters_poll485_thread_run(context);
 #if CONFIG_USERSPACE
+    k_tid_t thread_id = meters_poll485_thread_run(context);
     k_object_access_grant(&tool->data_access_mutex, &tool->poll485_thread);
     k_object_access_grant(tool->bus485, &tool->poll485_thread);
     k_mem_domain_add_thread(&app0_domain, thread_id);
+#else
+    meters_poll485_thread_run(context);
 #endif
 #endif
 

@@ -1,54 +1,54 @@
-menuconfig STRIM_METERS
+menuconfig STRIM_METERS2
     bool "Enable energy meters polling by RS485"
     default n
     depends on APPLICATION_DEFINED_SYSCALL
 
-if STRIM_METERS
-    module = STRIM_METERS
-    module-str = meters
+if STRIM_METERS2
+    module = STRIM_METERS2
+    module-str = meters2
     source "subsys/logging/Kconfig.template.log_config"
 
-    config STRIM_METERS_BUS485_ENABLE
+    config STRIM_METERS2_BUS485_ENABLE
         bool "Enable bus485 meters type"
         default n
         depends on STRIM_BUS485
 
-    config STRIM_METERS_INIT_PRIORITY
+    config STRIM_METERS2_INIT_PRIORITY
         int "Init priority"
         default 85
     
-    config STRIM_METERS_MAIN_STACK_SIZE
+    config STRIM_METERS2_MAIN_STACK_SIZE
         int "Main thread stack size"
         default 4096
     
-    config STRIM_METERS_MAIN_THREAD_PRIORITY
+    config STRIM_METERS2_MAIN_THREAD_PRIORITY
         int "Main thread priority"
         default 8
 
-    config STRIM_METERS_BUS485_RESPONSE_TIMEOUT
+    config STRIM_METERS2_BUS485_RESPONSE_TIMEOUT
         int "bus485 response timeout ms"
         default 3000
     
-    config STRIM_SPM90_WAIT_AFTER_ERROR
+    config STRIM_METERS2_SPM90_WAIT_AFTER_ERROR
         int "SPM90 wait after error ms"
         default 5000
     
-    config STRIM_SPM90_SILENSE_BEFORE_REQUEST
+    config STRIM_METERS2_SPM90_SILENSE_BEFORE_REQUEST
         int "SPM90 wait before request ms when error"
         default 1000
     
-    config STRIM_METERS_ITEMS_MAX_COUNT
+    config STRIM_METERS2_ITEMS_MAX_COUNT
         int "Meters max count"
         default 5
         help
             Should be equal to channels count plus main meter.
     
-    config STRIM_METERS_VALID_DATA_TIMEOUT
+    config STRIM_METERS2_VALID_DATA_TIMEOUT
         int "Value of window time for control valid data from meter in ms"
         default 5000
         
     
-    config STRIM_METERS_SHELL
+    config STRIM_METERS2_SHELL
         bool "Enable meters shell"
         default n
         depends on SHELL

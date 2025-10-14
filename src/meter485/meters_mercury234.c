@@ -8,7 +8,7 @@
 enum{MERCURY_ERROR_THRESHOLD = 3};
 enum{MERCURY_REQUEST_PAUSE = 30};
 
-LOG_MODULE_DECLARE(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
+LOG_MODULE_DECLARE(meters2, CONFIG_STRIM_METERS2_LOG_LEVEL);
 
 static int32_t meters_mercury_send(meters_context_t *context, uint8_t address, uint32_t baudrate,
                             const uint8_t *data, size_t length)
@@ -51,7 +51,7 @@ static int32_t meters_mercury_receive(meters_context_t *context, uint8_t address
     uint8_t resp[32];
     meters_tools_context_t *tool = context->tools;
 
-    ret = bus485_recv(tool->bus485, resp, sizeof(resp), CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
+    ret = bus485_recv(tool->bus485, resp, sizeof(resp), CONFIG_STRIM_METERS2_BUS485_RESPONSE_TIMEOUT);
     if(ret < 0){
         bus485_release(tool->bus485);
         return ret;
@@ -348,7 +348,7 @@ int32_t meters_mercury_read(meters_context_t *context, uint32_t item_idx)
         }
         else if((ret != -EFAULT) && (ret != -EINVAL))
         {
-            if(item->is_valid_values){
+            if(item->is_valid_values)
                 LOG_DBG("mercury error: %d", ret);
             ret = 0;
         }

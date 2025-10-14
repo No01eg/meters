@@ -2,7 +2,7 @@
 #include "bus485.h"
 #include <zephyr/sys/util_macro.h>
 
-LOG_MODULE_DECLARE(meters, CONFIG_STRIM_METERS_LOG_LEVEL);
+LOG_MODULE_DECLARE(meters2, CONFIG_STRIM_METERS2_LOG_LEVEL);
 
 enum{CE318_ERROR_THRESHOLD = 3};
 #define DFF_FLAG (0x80)
@@ -84,6 +84,14 @@ typedef enum
 
 
 #define SMP_NO_DFF        (0x00)
+
+typedef struct {
+    uint32_t baudrate;
+    uint32_t address;
+    uint8_t *query;
+    uint32_t query_length;
+    uint32_t is_signed_values;
+}ce318_poll_data_t;
  
 static int32_t ce318_set_escape(const uint8_t * src, uint8_t * dest, int32_t count)
 {
@@ -268,7 +276,7 @@ static int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * d
     uint8_t resp[256];
     uint8_t size = 0;   
                                            
-    ret = bus485_recv(tool->bus485, resp, ARRAY_SIZE(resp), CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
+    ret = bus485_recv(tool->bus485, resp, ARRAY_SIZE(resp), CONFIG_STRIM_METERS2_BUS485_RESPONSE_TIMEOUT);
     if(ret < 0){
         return ret;
     }
@@ -278,7 +286,7 @@ static int32_t meters_ce318_get_response(meters_context_t * context, uint8_t * d
     //Пока под вопросом нужна ли дополнительное доскачивание, если он за раз всегда вычитывает
     if(resp[ret-1] != SMP_END){
         
-        ret = bus485_recv(tool->bus485, resp + ret, ARRAY_SIZE(resp) - ret, CONFIG_STRIM_METERS_BUS485_RESPONSE_TIMEOUT);
+        ret = bus485_recv(tool->bus485, resp + ret, ARRAY_SIZE(resp) - ret, CONFIG_STRIM_METERS2_BUS485_RESPONSE_TIMEOUT);
         if(ret < 0){
             return ret;
         }

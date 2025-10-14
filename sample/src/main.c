@@ -6,7 +6,6 @@
 
 LOG_MODULE_REGISTER(app);
 
-
 meter_parameters_t meters_parameters[] = {
 	{.type = meters_type_extern_dc, .address = 1, .current_factor = 1},
 	{.type = meters_type_extern_ac, .address = 3, .current_factor = 1},
@@ -16,6 +15,7 @@ meter_parameters_t meters_parameters[] = {
 };
 
 int main(void){
+	LOG_INF("start sample");
 	meters_init(meters_parameters, ARRAY_SIZE(meters_parameters));
 	while(1){
 		k_msleep(2000);
